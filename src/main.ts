@@ -335,3 +335,26 @@ function handleSwipe() {
 
 // Initialize
 console.log("🎉 Finance Wrapped loaded!");
+
+// Check for existing session
+async function checkSession() {
+  if (api.isAuthenticated()) {
+    console.log("Found existing session, attempting to load data...");
+    showScreen(loadingScreen);
+    try {
+      wrappedData = await fetchAllData();
+      // Small delay for effect
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      renderSlides(wrappedData);
+      showScreen(wrappedContainer);
+    } catch (error) {
+      console.error("Session expired or invalid:", error);
+      api.logout();
+      showScreen(loginScreen);
+    }
+  } else {
+    showScreen(loginScreen);
+  }
+}
+
+checkSession();

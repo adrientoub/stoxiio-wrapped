@@ -4,9 +4,32 @@ const API_BASE = "/api";
 
 class ApiClient {
   private accessToken: string | null = null;
+  private refreshToken: string | null = null;
+
+  constructor() {
+    this.accessToken = localStorage.getItem("stoxiio_access_token");
+    this.refreshToken = localStorage.getItem("stoxiio_refresh_token");
+  }
 
   setAccessToken(token: string) {
     this.accessToken = token;
+    localStorage.setItem("stoxiio_access_token", token);
+  }
+
+  setRefreshToken(token: string) {
+    this.refreshToken = token;
+    localStorage.setItem("stoxiio_refresh_token", token);
+  }
+
+  isAuthenticated(): boolean {
+    return !!this.accessToken;
+  }
+
+  logout() {
+    this.accessToken = null;
+    this.refreshToken = null;
+    localStorage.removeItem("stoxiio_access_token");
+    localStorage.removeItem("stoxiio_refresh_token");
   }
 
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
@@ -54,6 +77,9 @@ class ApiClient {
 
     if (response.accessToken) {
       this.setAccessToken(response.accessToken);
+    }
+    if (response.refreshToken) {
+      this.setRefreshToken(response.refreshToken);
     }
 
     return response;
