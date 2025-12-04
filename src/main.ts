@@ -1,6 +1,6 @@
 import { api } from './api.js';
 import { slides } from './slides.js';
-import type { WrappedData, Currency, Portfolio, PortfolioProfit } from './types.js';
+import type { WrappedData, Currency, Portfolio, PortfolioSummaryChart, ChartDataSet } from './types.js';
 
 // DOM Elements
 const loginScreen = document.getElementById('login-screen')!;
@@ -47,10 +47,10 @@ async function fetchAllData(): Promise<WrappedData> {
   const userCurrency = currencies.find(c => c.currencyId === user.currencyId) || currencies[0];
 
   updateLoadingProgress(35, 'Fetching portfolios...');
-  const portfolios = await api.getPortfolios();
+  const portfolios: Portfolio[] = await api.getPortfolios();
 
   updateLoadingProgress(50, 'Calculating portfolio summary...');
-  const portfolioSummary = await api.getPortfoliosSummary();
+  const portfolioSummary: PortfolioSummaryChart[] = await api.getPortfoliosSummary();
 
   updateLoadingProgress(65, 'Loading your goals...');
   const goals = await api.getGoals();
@@ -60,7 +60,23 @@ async function fetchAllData(): Promise<WrappedData> {
 
   updateLoadingProgress(95, 'Crunching final numbers...');
 
-  // Calculate derived values
+  // Filter portfolios that should be included in total worth calculation
+  const portfoliosForTotal = portfolios.filter(p => p.includedInTotalWorth !== false);
+
+  // Calculate total portfolio value from individual portfolios
+  // Current value = invested amount (totalAmountMainCurrency) + profit (totalProfitMainCurrency)
+  const totalPortfolioValue = portfoliosForTotal.reduce((sum, p) =>
+    sum + (p.totalAmountMainCurrency || 0) + (p.totalProfitMainCurrency || 0), 0);
+  const totalInvested = portfoliosForTotal.reduce((sum, p) => sum + (p.totalAmountMainCurrency || 0), 0);
+  const totalProfit = portfoliosForTotal.reduce((sum, p) => sum + (p.totalProfitMainCurrency || 0), 0);
+  const totalProfitPercent = totalInvested > 0 ? (totalProfit / totalInvested) * 100 : 0;
+
+  console.log('📊 Portfolios:', portfolios);
+  console.log('📊 Total Invested:', totalInvested);
+  console.log('📊 Total Profit:', totalProfit);
+  console.log('📊 Total Portfolio Value:', totalPortfolioValue);
+
+  // Extract yearly data from income statement
   const yearlyProfits = incomeStatement.portfolioProfitsByYear[year] || [];
   const previousYearProfits = incomeStatement.portfolioProfitsByYear[previousYear] || [];
   const yearlyDividends = incomeStatement.dividendIncomeStatementsByYear[year] || [];
@@ -75,37 +91,21 @@ async function fetchAllData(): Promise<WrappedData> {
   const totalExpenses = yearlyExpenses.reduce((sum, e) => sum + e.totalAmountInUserCurrency, 0);
   const totalVestings = yearlyVestings.reduce((sum, v) => sum + v.totalAmountInUserCurrency, 0);
 
-  // Calculate total portfolio value from summary
-  let totalPortfolioValue = 0;
-  if (portfolioSummary && Array.isArray(portfolioSummary)) {
-    totalPortfolioValue = portfolioSummary.reduce((sum: number, p: any) => {
-      return sum + (p.currentValueInUserCurrency || p.currentValue || 0);
-    }, 0);
-  } else if (portfolioSummary?.totalValue) {
-    totalPortfolioValue = portfolioSummary.totalValue;
-  } else {
-    // Fallback: estimate from portfolios
-    totalPortfolioValue = portfolios.reduce((sum, p: any) => {
-      return sum + (p.currentValueInUserCurrency || p.currentValue || p.totalValue || 0);
-    }, 0);
-  }
-
-  // Calculate yearly profit percentage (estimate)
-  const totalInvested = totalPortfolioValue - yearlyProfit;
+  // Calculate yearly profit percentage (use totalInvested from portfolio data)
   const yearlyProfitPercentage = totalInvested > 0 ? (yearlyProfit / totalInvested) * 100 : 0;
 
-  // Find best performing portfolio
+  // Find best performing portfolio this year
   let bestPerformingPortfolio: Portfolio | null = null;
   if (yearlyProfits.length > 0) {
     const bestProfit = yearlyProfits.reduce((best, current) =>
       current.totalAmountInUserCurrency > best.totalAmountInUserCurrency ? current : best
     );
-    const portfolioMatch = portfolios.find((p: any) => p.portfolioId === bestProfit.portfolioId);
+    const portfolioMatch = portfolios.find(p => p.walletId === bestProfit.portfolioId);
     if (portfolioMatch) {
       bestPerformingPortfolio = {
         ...portfolioMatch,
         profit: bestProfit.totalAmountInUserCurrency,
-      } as Portfolio;
+      };
     }
   }
 
@@ -120,6 +120,41 @@ async function fetchAllData(): Promise<WrappedData> {
     .map(([symbol, amount]) => ({ symbol, amount }))
     .sort((a, b) => b.amount - a.amount);
 
+  // Extract historical data from income statement chart
+  const chart = incomeStatement.incomeStatementByYearChart;
+  const incomeByYear: { year: string; income: number }[] = [];
+  const expenseByYear: { year: string; expense: number }[] = [];
+  const profitByYear: { year: string; profit: number }[] = [];
+  const dividendByYear: { year: string; dividend: number }[] = [];
+  const vestingByYear: { year: string; vesting: number }[] = [];
+
+  if (chart && chart.dataSets) {
+    const findDataSet = (labelPattern: string) =>
+      chart.dataSets.find(ds => ds.chartDataSetId.includes(labelPattern) || ds.label.includes(labelPattern));
+
+    const incomeDataSet = findDataSet('Incomes');
+    const expenseDataSet = findDataSet('Expenses');
+    const profitDataSet = findDataSet('PortfolioProfits');
+    const dividendDataSet = findDataSet('Dividends');
+    const vestingDataSet = findDataSet('PortfolioVestings');
+
+    incomeDataSet?.data.forEach(d => {
+      if (d.y !== null) incomeByYear.push({ year: d.x, income: d.y });
+    });
+    expenseDataSet?.data.forEach(d => {
+      if (d.y !== null) expenseByYear.push({ year: d.x, expense: Math.abs(d.y) });
+    });
+    profitDataSet?.data.forEach(d => {
+      if (d.y !== null) profitByYear.push({ year: d.x, profit: d.y });
+    });
+    dividendDataSet?.data.forEach(d => {
+      if (d.y !== null) dividendByYear.push({ year: d.x, dividend: d.y });
+    });
+    vestingDataSet?.data.forEach(d => {
+      if (d.y !== null) vestingByYear.push({ year: d.x, vesting: d.y });
+    });
+  }
+
   updateLoadingProgress(100, 'Ready!');
 
   return {
@@ -131,6 +166,8 @@ async function fetchAllData(): Promise<WrappedData> {
     goals,
     incomeStatement,
     totalPortfolioValue,
+    totalProfit,
+    totalProfitPercent,
     yearlyProfit,
     yearlyProfitPercentage,
     previousYearProfit,
@@ -140,6 +177,11 @@ async function fetchAllData(): Promise<WrappedData> {
     totalVestings,
     bestPerformingPortfolio,
     topDividendStocks,
+    incomeByYear,
+    expenseByYear,
+    profitByYear,
+    dividendByYear,
+    vestingByYear,
   };
 }
 

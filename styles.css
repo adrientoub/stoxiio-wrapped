@@ -581,6 +581,59 @@ body {
   animation: slideIn 0.8s ease-out 0.4s both;
 }
 
+/* Bar chart styles */
+.bar-chart {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 16px;
+  margin-top: 24px;
+  height: 200px;
+  animation: slideIn 0.8s ease-out 0.4s both;
+}
+
+.bar-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.bar-container {
+  width: 40px;
+  height: 120px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+}
+
+.bar-fill {
+  width: 100%;
+  border-radius: 8px;
+  transition: height 1s ease-out;
+}
+
+.bar-fill.positive {
+  background: linear-gradient(to top, #4ade80, #22c55e);
+}
+
+.bar-fill.negative {
+  background: linear-gradient(to top, #f87171, #ef4444);
+}
+
+.bar-label {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 600;
+}
+
+.bar-value {
+  font-size: 11px;
+  font-weight: 700;
+}
+
 .chart-bar {
   width: 40px;
   background: rgba(255, 255, 255, 0.3);

@@ -18,32 +18,83 @@ export interface Currency {
   symbol: string;
 }
 
+// Portfolio from /portfolios endpoint (array of portfolio objects)
 export interface Portfolio {
-  portfolioId: number;
+  walletId: number;
+  portfolioId?: number; // alias for walletId
   name: string;
+  type: number;
+  description: string;
   currencyId: number;
-  totalValue?: number;
-  totalInvested?: number;
-  profit?: number;
-  profitPercentage?: number;
-  holdings?: Holding[];
+  countryId: number;
+  lastUpdateDate: number;
+  totalProfitMainCurrency: number;
+  totalProfitPercentMainCurrency: number;
+  totalAmountMainCurrency: number;
+  includedInTotalWorth: boolean;
+  stocks?: Stock[];
+  profit?: number; // computed field for display
 }
 
-export interface Holding {
+export interface Stock {
+  stockId: number;
+  stockExchangeId: number;
+  currencyId: number;
+  type: number;
   symbol: string;
-  name?: string;
-  quantity: number;
-  currentValue: number;
-  profit: number;
-  profitPercentage: number;
+  currencyName: string;
+  currencySymbol: string;
+  description: string;
+  buyDate: number;
+  vested: boolean;
+  vestDate?: number;
+  vestGroupId?: string;
+  initialNumberOwned: number;
+  numberOwned: number;
+  totalAmount: number;
+  totalAmountMainCurrency: number;
+  pru: number;
+  pruMainCurrency: number;
+  currentPrice: number;
+  currentPriceMainCurrency: number;
+  change: number;
+  changeMainCurrency: number;
+  changePercent: number;
+  totalProfit: number;
+  totalProfitMainCurrency: number;
+  totalProfitPercent: number;
+  totalProfitPercentMainCurrency: number;
+  lastUpdateDate: number;
+  isMarketOpen: boolean;
 }
 
-export interface PortfolioSummary {
-  totalValue: number;
-  totalInvested: number;
-  totalProfit: number;
-  profitPercentage: number;
-  portfolios: Portfolio[];
+// Portfolio Summary - array of chart objects
+export interface PortfolioSummaryChart {
+  id: string;
+  name: string;
+  type: string;
+  stacked: boolean;
+  currency: string;
+  unitType: string;
+  computeMinMax: boolean;
+  computeChange: boolean;
+  timeRangesFilterable: boolean;
+  dataSets: ChartDataSet[];
+}
+
+export interface ChartDataSet {
+  chartDataSetId: string;
+  labelType: number;
+  label: string;
+  type: number;
+  yType: number;
+  data: ChartDataPoint[];
+  metadata?: any;
+}
+
+export interface ChartDataPoint {
+  x: string;
+  y: number | null;
 }
 
 export interface Goal {
@@ -62,6 +113,7 @@ export interface IncomeStatement {
   incomesByYear: Record<string, IncomeEntry[]>;
   expensesByYear: Record<string, ExpenseEntry[]>;
   vestingsByYear: Record<string, VestingEntry[]>;
+  incomeStatementByYearChart?: IncomeStatementChart;
 }
 
 export interface DividendEntry {
@@ -69,6 +121,7 @@ export interface DividendEntry {
   symbol: string;
   buyDate: number;
   currencyId: number;
+  mainCurrencyId: number | null;
   totalAmount: number;
   totalAmountInUserCurrency: number;
   exchangeRate: number;
@@ -92,6 +145,16 @@ export interface ExpenseEntry {
 export interface VestingEntry {
   portfolioId: number;
   totalAmountInUserCurrency: number;
+}
+
+export interface IncomeStatementChart {
+  id: string;
+  name: string;
+  type: string;
+  stacked: boolean;
+  currency: string;
+  unitType: string;
+  dataSets: ChartDataSet[];
 }
 
 export interface Dashboard {
@@ -124,12 +187,14 @@ export interface WrappedData {
   currencies: Currency[];
   userCurrency: Currency;
   portfolios: Portfolio[];
-  portfolioSummary: any;
+  portfolioSummary: PortfolioSummaryChart[];
   goals: Goal[];
   incomeStatement: IncomeStatement;
 
   // Computed values for display
   totalPortfolioValue: number;
+  totalProfit: number;
+  totalProfitPercent: number;
   yearlyProfit: number;
   yearlyProfitPercentage: number;
   previousYearProfit: number;
@@ -139,4 +204,11 @@ export interface WrappedData {
   totalVestings: number;
   bestPerformingPortfolio: Portfolio | null;
   topDividendStocks: { symbol: string; amount: number }[];
+
+  // Historical data from income statement chart
+  incomeByYear: { year: string; income: number }[];
+  expenseByYear: { year: string; expense: number }[];
+  profitByYear: { year: string; profit: number }[];
+  dividendByYear: { year: string; dividend: number }[];
+  vestingByYear: { year: string; vesting: number }[];
 }

@@ -56,8 +56,51 @@ export const slides: SlideConfig[] = [
         <div class="slide-title">Your investments are now worth</div>
         <div class="slide-value">${formatCurrency(data.totalPortfolioValue, data.userCurrency)}</div>
         <div class="slide-subtitle">Across ${data.portfolios.length} portfolio${data.portfolios.length !== 1 ? 's' : ''}</div>
+        <div class="comparison-change ${data.totalProfit >= 0 ? 'positive' : 'negative'}">
+          Total profit: ${formatCurrency(data.totalProfit, data.userCurrency)} (${formatPercentage(data.totalProfitPercent)})
+        </div>
       </div>
     `,
+  },
+
+  // Portfolio breakdown
+  {
+    id: 'portfolio-breakdown',
+    gradient: 'gradient-7',
+    render: (data) => {
+      // Sort by current value (invested + profit)
+      const sortedPortfolios = [...data.portfolios].sort((a, b) =>
+        (b.totalAmountMainCurrency + b.totalProfitMainCurrency) - (a.totalAmountMainCurrency + a.totalProfitMainCurrency)
+      );
+
+      const portfolioList = sortedPortfolios.slice(0, 5).map((p, i) => {
+        const currentValue = p.totalAmountMainCurrency + p.totalProfitMainCurrency;
+        const profitPercent = p.totalProfitPercentMainCurrency * 100;
+        return `
+          <div class="ranking-item">
+            <div class="ranking-position">${i + 1}</div>
+            <div class="ranking-info">
+              <div class="ranking-name">${p.name}</div>
+              <div class="ranking-subtitle" style="font-size: 12px; opacity: 0.7; color: ${p.totalProfitMainCurrency >= 0 ? '#4ade80' : '#f87171'}">
+                ${p.totalProfitMainCurrency >= 0 ? '+' : ''}${formatCurrency(p.totalProfitMainCurrency, data.userCurrency)} (${profitPercent >= 0 ? '+' : ''}${profitPercent.toFixed(0)}%)
+              </div>
+            </div>
+            <div class="ranking-value">${formatCurrency(currentValue, data.userCurrency)}</div>
+          </div>
+        `;
+      }).join('');
+
+      return `
+        <div class="slide-content">
+          <div class="slide-icon">📊</div>
+          <div class="slide-label">Portfolio Breakdown</div>
+          <div class="slide-title">Your portfolios by value</div>
+          <div class="ranking-list">
+            ${portfolioList}
+          </div>
+        </div>
+      `;
+    },
   },
 
   // Yearly Performance
@@ -91,6 +134,42 @@ export const slides: SlideConfig[] = [
     },
   },
 
+  // Profit History
+  {
+    id: 'profit-history',
+    gradient: 'gradient-8',
+    render: (data) => {
+      const profits = data.profitByYear.filter(p => p.year !== 'null' && p.profit !== null);
+      const recentProfits = profits.slice(-5);
+
+      const barsHtml = recentProfits.map(p => {
+        const maxProfit = Math.max(...recentProfits.map(r => Math.abs(r.profit)));
+        const height = Math.min(100, (Math.abs(p.profit) / maxProfit) * 100);
+        const isPositive = p.profit >= 0;
+        return `
+          <div class="bar-item">
+            <div class="bar-container">
+              <div class="bar-fill ${isPositive ? 'positive' : 'negative'}" style="height: ${height}%"></div>
+            </div>
+            <div class="bar-label">${p.year}</div>
+            <div class="bar-value" style="color: ${isPositive ? '#4ade80' : '#f87171'}">${formatCurrency(p.profit, data.userCurrency)}</div>
+          </div>
+        `;
+      }).join('');
+
+      return `
+        <div class="slide-content">
+          <div class="slide-icon">📊</div>
+          <div class="slide-label">Profit History</div>
+          <div class="slide-title">Your portfolio gains over the years</div>
+          <div class="bar-chart">
+            ${barsHtml}
+          </div>
+        </div>
+      `;
+    },
+  },
+
   // Best Performing Portfolio
   {
     id: 'best-portfolio',
@@ -109,11 +188,14 @@ export const slides: SlideConfig[] = [
       return `
         <div class="slide-content">
           <div class="slide-icon">🏆</div>
-          <div class="slide-label">Top Performer</div>
+          <div class="slide-label">Top Performer of ${getYear()}</div>
           <div class="slide-title">Your best performing portfolio was</div>
-          <div class="slide-value" style="font-size: 36px;">${data.bestPerformingPortfolio.name || `Portfolio #${data.bestPerformingPortfolio.portfolioId}`}</div>
+          <div class="slide-value" style="font-size: 36px;">${data.bestPerformingPortfolio.name}</div>
           <div class="slide-subtitle">
-            ${formatCurrency(data.bestPerformingPortfolio.profit || 0, data.userCurrency)} profit
+            ${formatCurrency(data.bestPerformingPortfolio.profit || 0, data.userCurrency)} profit this year
+          </div>
+          <div class="comparison-change positive">
+            Total value: ${formatCurrency(data.bestPerformingPortfolio.totalAmountMainCurrency + data.bestPerformingPortfolio.totalProfitMainCurrency, data.userCurrency)}
           </div>
         </div>
       `;
@@ -171,6 +253,16 @@ export const slides: SlideConfig[] = [
         `;
       }
 
+      // Show vesting history
+      const vestings = data.vestingByYear.filter(v => v.year !== 'null' && v.vesting > 0);
+      const recentVestings = vestings.slice(-4);
+      const vestingHistory = recentVestings.map(v => `
+        <div class="comparison-item">
+          <div class="comparison-year">${v.year}</div>
+          <div class="comparison-value">${formatCurrency(v.vesting, data.userCurrency)}</div>
+        </div>
+      `).join('');
+
       return `
         <div class="slide-content">
           <div class="slide-icon">🎁</div>
@@ -178,6 +270,9 @@ export const slides: SlideConfig[] = [
           <div class="slide-title">Your stock awards vested worth</div>
           <div class="slide-value">${formatCurrency(data.totalVestings, data.userCurrency)}</div>
           <div class="slide-subtitle">Equity compensation for the win! 🚀</div>
+          <div class="comparison-container" style="flex-wrap: wrap">
+            ${vestingHistory}
+          </div>
         </div>
       `;
     },
@@ -186,7 +281,7 @@ export const slides: SlideConfig[] = [
   // Income vs Expenses
   {
     id: 'income-expenses',
-    gradient: 'gradient-6',
+    gradient: 'gradient-4',
     render: (data) => {
       const savings = data.totalIncome + data.totalExpenses; // expenses are negative
       const savingsRate = data.totalIncome > 0 ? (savings / data.totalIncome) * 100 : 0;
@@ -200,11 +295,11 @@ export const slides: SlideConfig[] = [
           <div class="comparison-container">
             <div class="comparison-item">
               <div class="comparison-year">Income</div>
-              <div class="comparison-value" style="color: #22c55e">${formatCurrency(data.totalIncome, data.userCurrency)}</div>
+              <div class="comparison-value" style="color: #ffffff; text-shadow: 0 2px 4px rgba(0,0,0,0.3)">${formatCurrency(data.totalIncome, data.userCurrency)}</div>
             </div>
             <div class="comparison-item">
               <div class="comparison-year">Expenses</div>
-              <div class="comparison-value" style="color: #ef4444">${formatCurrency(Math.abs(data.totalExpenses), data.userCurrency)}</div>
+              <div class="comparison-value" style="color: #ffffff; text-shadow: 0 2px 4px rgba(0,0,0,0.3)">${formatCurrency(Math.abs(data.totalExpenses), data.userCurrency)}</div>
             </div>
           </div>
 
@@ -218,10 +313,55 @@ export const slides: SlideConfig[] = [
     },
   },
 
+  // Income Evolution
+  {
+    id: 'income-evolution',
+    gradient: 'gradient-1',
+    render: (data) => {
+      const incomes = data.incomeByYear.filter(i => i.year !== 'null' && i.income > 0);
+      const recentIncomes = incomes.slice(-5);
+
+      if (recentIncomes.length < 2) {
+        return `
+          <div class="slide-content">
+            <div class="slide-icon">📈</div>
+            <div class="slide-label">Income Growth</div>
+            <div class="slide-title">Not enough income data to show evolution</div>
+          </div>
+        `;
+      }
+
+      const firstYear = recentIncomes[0];
+      const lastYear = recentIncomes[recentIncomes.length - 1];
+      const growth = ((lastYear.income - firstYear.income) / firstYear.income) * 100;
+
+      const incomeList = recentIncomes.map(i => `
+        <div class="ranking-item">
+          <div class="ranking-position">${i.year}</div>
+          <div class="ranking-value">${formatCurrency(i.income, data.userCurrency)}</div>
+        </div>
+      `).join('');
+
+      return `
+        <div class="slide-content">
+          <div class="slide-icon">💵</div>
+          <div class="slide-label">Income Evolution</div>
+          <div class="slide-title">Your income over the years</div>
+          <div class="comparison-change ${growth >= 0 ? 'positive' : 'negative'}">
+            ${growth >= 0 ? '+' : ''}${growth.toFixed(0)}% since ${firstYear.year}
+          </div>
+          <div class="ranking-list" style="margin-top: 20px;">
+            ${incomeList}
+          </div>
+        </div>
+      `;
+    },
+  },
+
   // Goals Progress
   {
     id: 'goals',
-    gradient: 'gradient-1',
+    gradient: 'gradient-3',
     render: (data) => {
       if (data.goals.length === 0) {
         return `
