@@ -209,6 +209,8 @@ export interface WrappedData {
   incomeByYear: { year: string; income: number }[];
   expenseByYear: { year: string; expense: number }[];
   profitByYear: { year: string; profit: number }[];
+  percentageByYear: { year: string; percentage: number }[];
   dividendByYear: { year: string; dividend: number }[];
   vestingByYear: { year: string; vesting: number }[];
+  futureVestings: { year: string; amount: number }[];
 }

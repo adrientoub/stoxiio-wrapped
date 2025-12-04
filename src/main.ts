@@ -128,6 +128,7 @@ async function fetchAllData(): Promise<WrappedData> {
   const incomeByYear: { year: string; income: number }[] = [];
   const expenseByYear: { year: string; expense: number }[] = [];
   const profitByYear: { year: string; profit: number }[] = [];
+  const percentageByYear: { year: string; percentage: number }[] = [];
   const dividendByYear: { year: string; dividend: number }[] = [];
   const vestingByYear: { year: string; vesting: number }[] = [];
 
@@ -138,6 +139,7 @@ async function fetchAllData(): Promise<WrappedData> {
     const incomeDataSet = findDataSet("Incomes");
     const expenseDataSet = findDataSet("Expenses");
     const profitDataSet = findDataSet("PortfolioProfits");
+    const percentageDataSet = findDataSet("PercentageVariation");
     const dividendDataSet = findDataSet("Dividends");
     const vestingDataSet = findDataSet("PortfolioVestings");
 
@@ -150,12 +152,38 @@ async function fetchAllData(): Promise<WrappedData> {
     profitDataSet?.data.forEach((d) => {
       if (d.y !== null) profitByYear.push({ year: d.x, profit: d.y });
     });
+    percentageDataSet?.data.forEach((d) => {
+      if (d.y !== null) percentageByYear.push({ year: d.x, percentage: d.y * 100 });
+    });
     dividendDataSet?.data.forEach((d) => {
       if (d.y !== null) dividendByYear.push({ year: d.x, dividend: d.y });
     });
     vestingDataSet?.data.forEach((d) => {
       if (d.y !== null) vestingByYear.push({ year: d.x, vesting: d.y });
     });
+  }
+
+  // Calculate future vestings from portfolio summary
+  const futureVestings: { year: string; amount: number }[] = [];
+  const vestingScheduleChart = portfolioSummary.find((c) => c.id === "VestingYearsSchedule");
+
+  if (vestingScheduleChart && vestingScheduleChart.dataSets) {
+    const futureVestingMap = new Map<string, number>();
+
+    vestingScheduleChart.dataSets.forEach((ds) => {
+      ds.data.forEach((point) => {
+        if (point.y !== null && parseInt(point.x) > parseInt(year)) {
+          const currentAmount = futureVestingMap.get(point.x) || 0;
+          futureVestingMap.set(point.x, currentAmount + point.y);
+        }
+      });
+    });
+
+    Array.from(futureVestingMap.entries())
+      .sort((a, b) => parseInt(a[0]) - parseInt(b[0]))
+      .forEach(([year, amount]) => {
+        futureVestings.push({ year, amount });
+      });
   }
 
   updateLoadingProgress(100, "Ready!");
@@ -183,8 +211,10 @@ async function fetchAllData(): Promise<WrappedData> {
     incomeByYear,
     expenseByYear,
     profitByYear,
+    percentageByYear,
     dividendByYear,
     vestingByYear,
+    futureVestings,
   };
 }
 
@@ -332,6 +362,25 @@ function handleSwipe() {
     prevSlide();
   }
 }
+
+// Mouse wheel support
+let lastScrollTime = 0;
+const scrollCooldown = 1000; // ms
+
+document.addEventListener("wheel", (e) => {
+  if (!wrappedContainer.classList.contains("active")) return;
+
+  const now = Date.now();
+  if (now - lastScrollTime < scrollCooldown) return;
+
+  if (e.deltaY > 0) {
+    nextSlide();
+    lastScrollTime = now;
+  } else if (e.deltaY < 0) {
+    prevSlide();
+    lastScrollTime = now;
+  }
+});
 
 // Initialize
 console.log("🎉 Finance Wrapped loaded!");

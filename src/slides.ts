@@ -205,15 +205,25 @@ export const slides: SlideConfig[] = [
           const maxProfit = Math.max(...recentProfits.map((r) => Math.abs(r.profit)));
           const height = Math.min(100, (Math.abs(p.profit) / maxProfit) * 100);
           const isPositive = p.profit >= 0;
+
+          // Find percentage for this year
+          const percentageData = data.percentageByYear.find(pc => pc.year === p.year);
+          const percentage = percentageData ? percentageData.percentage : 0;
+
           return `
-          <div class="flex flex-col items-center gap-2 flex-1 h-full justify-end group">
-            <div class="relative w-full max-w-[60px] h-[200px] bg-black/20 rounded-t-xl flex items-end overflow-hidden">
+          <div class="flex flex-col items-center gap-1 flex-1 h-full justify-end group">
+            <div class="flex flex-col items-center mb-2 animate-fade-in-up">
+               <div class="text-xs font-bold ${isPositive ? "text-green-300" : "text-red-300"}">
+                ${formatCurrency(p.profit, data.userCurrency)}
+              </div>
+              <div class="text-[10px] font-bold text-white/60">
+                ${formatPercentage(percentage)}
+              </div>
+            </div>
+            <div class="relative w-full max-w-[60px] h-[160px] bg-black/20 rounded-t-xl flex items-end overflow-hidden">
               <div class="w-full transition-all duration-1000 ease-out ${isPositive ? "bg-gradient-to-t from-green-500 to-green-300" : "bg-gradient-to-t from-red-500 to-red-300"} group-hover:opacity-90" style="height: ${height}%"></div>
             </div>
             <div class="text-sm font-bold text-white/70">${p.year}</div>
-            <div class="text-xs font-bold ${isPositive ? "text-green-300" : "text-red-300"} opacity-0 group-hover:opacity-100 transition-opacity absolute -top-8 bg-black/80 px-2 py-1 rounded pointer-events-none">
-              ${formatCurrency(p.profit, data.userCurrency)}
-            </div>
           </div>
         `;
         })
@@ -223,8 +233,8 @@ export const slides: SlideConfig[] = [
         <div class="flex flex-col items-center justify-center h-full text-center p-6 w-full">
           <div class="text-6xl mb-6">📊</div>
           <div class="text-sm font-bold uppercase tracking-[0.2em] text-white/60 mb-2">Profit History</div>
-          <div class="text-3xl font-bold text-white mb-12">Your portfolio gains over the years</div>
-          <div class="flex items-end justify-center gap-4 h-[250px] w-full max-w-2xl relative">
+          <div class="text-3xl font-bold text-white mb-8">Your portfolio gains over the years</div>
+          <div class="flex items-end justify-center gap-4 h-[280px] w-full max-w-2xl relative">
             ${barsHtml}
           </div>
         </div>
@@ -511,6 +521,57 @@ export const slides: SlideConfig[] = [
           <div class="w-full">
             ${goalsHtml}
           </div>
+        </div>
+      `;
+    },
+  },
+
+  // Future Vestings
+  {
+    id: "future-vestings",
+    gradient: "from-cyan-600 to-blue-700",
+    render: (data) => {
+      const futureVestings = data.futureVestings || [];
+
+      if (futureVestings.length === 0) {
+        return `
+          <div class="flex flex-col items-center justify-center h-full text-center p-6">
+            <div class="text-8xl mb-6">🔮</div>
+            <div class="text-2xl font-bold text-white mb-2">What's next?</div>
+            <div class="text-white/60">No upcoming vestings scheduled yet.</div>
+          </div>
+        `;
+      }
+
+      const nextYears = futureVestings.slice(0, 3);
+      let totalFutureVesting = 0;
+
+      const vestingList = nextYears
+        .map((v) => {
+          totalFutureVesting += v.amount;
+          return `
+          <div class="flex justify-between items-center p-4 bg-white/10 rounded-xl mb-3">
+            <div class="font-bold text-xl text-white">${v.year}</div>
+            <div class="font-bold text-xl text-cyan-300">${formatCurrency(v.amount, data.userCurrency)}</div>
+          </div>
+        `;
+        })
+        .join("");
+
+      return `
+        <div class="flex flex-col items-center justify-center h-full text-center p-6 w-full max-w-2xl mx-auto">
+          <div class="text-8xl mb-6 animate-pulse">🔮</div>
+          <div class="text-sm font-bold uppercase tracking-[0.2em] text-white/60 mb-4">What's Next?</div>
+          <div class="text-3xl text-white mb-8">Upcoming stock vestings</div>
+
+          <div class="w-full mb-8">
+            ${vestingList}
+          </div>
+
+          <div class="text-xl text-white/80">
+            Total upcoming value: <span class="font-bold text-white">${formatCurrency(totalFutureVesting, data.userCurrency)}</span>
+          </div>
+          <div class="text-sm text-white/50 mt-2">(Estimated based on current prices)</div>
         </div>
       `;
     },
