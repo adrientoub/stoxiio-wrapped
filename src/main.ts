@@ -59,6 +59,9 @@ async function fetchAllData(): Promise<WrappedData> {
   updateLoadingProgress(80, "Analyzing income statements...");
   const incomeStatement = await api.getIncomeStatements();
 
+  updateLoadingProgress(90, "Calculating net worth...");
+  const wealth = await api.getWealth();
+
   updateLoadingProgress(95, "Crunching final numbers...");
 
   // Filter portfolios that should be included in total worth calculation
@@ -215,6 +218,7 @@ async function fetchAllData(): Promise<WrappedData> {
     dividendByYear,
     vestingByYear,
     futureVestings,
+    wealth,
   };
 }
 

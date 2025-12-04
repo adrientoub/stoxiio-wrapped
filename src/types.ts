@@ -181,6 +181,18 @@ export interface DataSetEntry {
   value: number;
 }
 
+export interface Wealth {
+  totalWealth: number;
+  totalInvestments: number;
+  totalUnvested: number;
+  totalCash: number;
+  totalDebt: number;
+  totalRetirementAccounts: number;
+  totalRealEstate: number;
+  currencyId: number;
+  charts: any[]; // We can define this more strictly if needed, but 'any' is fine for now
+}
+
 // Wrapped Data - processed for display
 export interface WrappedData {
   user: User;
@@ -190,6 +202,7 @@ export interface WrappedData {
   portfolioSummary: PortfolioSummaryChart[];
   goals: Goal[];
   incomeStatement: IncomeStatement;
+  wealth: Wealth;
 
   // Computed values for display
   totalPortfolioValue: number;

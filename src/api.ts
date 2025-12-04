@@ -1,4 +1,4 @@
-import type { AuthResponse, Currency, Portfolio, Goal, IncomeStatement, User } from "./types.js";
+import type { AuthResponse, Currency, Portfolio, Goal, IncomeStatement, User, Wealth } from "./types.js";
 
 const API_BASE = "/api";
 
@@ -87,6 +87,10 @@ class ApiClient {
 
   async getUserInfo(): Promise<User> {
     return this.request<User>("/users/info");
+  }
+
+  async getWealth(): Promise<Wealth> {
+    return this.request<Wealth>("/users/wealth");
   }
 
   async getCurrencies(): Promise<Currency[]> {

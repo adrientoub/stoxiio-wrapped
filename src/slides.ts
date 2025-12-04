@@ -577,6 +577,100 @@ export const slides: SlideConfig[] = [
     },
   },
 
+  // Total Net Worth
+  {
+    id: "net-worth",
+    gradient: "from-emerald-800 to-teal-900",
+    render: (data) => {
+      const wealth = data.wealth;
+      return `
+        <div class="flex flex-col items-center justify-center h-full text-center p-6">
+          <div class="text-8xl mb-6 animate-pulse">🏛️</div>
+          <div class="text-sm font-bold uppercase tracking-[0.2em] text-white/60 mb-4">Total Net Worth</div>
+          <div class="text-3xl text-white mb-4">Your complete financial picture</div>
+          <div class="text-6xl md:text-8xl font-black text-transparent bg-clip-text bg-gradient-to-b from-emerald-200 to-emerald-500 mb-8 drop-shadow-lg">
+            ${formatCurrency(wealth.totalWealth, data.userCurrency)}
+          </div>
+
+          <div class="grid grid-cols-3 gap-4 w-full max-w-3xl">
+            <div class="bg-white/10 p-4 rounded-xl backdrop-blur-sm">
+              <div class="text-sm text-white/60 mb-1">Investments</div>
+              <div class="font-bold text-lg md:text-xl">${formatCurrency(wealth.totalInvestments, data.userCurrency)}</div>
+            </div>
+            <div class="bg-white/10 p-4 rounded-xl backdrop-blur-sm">
+              <div class="text-sm text-white/60 mb-1">Real Estate</div>
+              <div class="font-bold text-lg md:text-xl">${formatCurrency(wealth.totalRealEstate, data.userCurrency)}</div>
+            </div>
+            <div class="bg-red-500/20 p-4 rounded-xl backdrop-blur-sm border border-red-500/30">
+              <div class="text-sm text-red-300 mb-1">Debt</div>
+              <div class="font-bold text-lg md:text-xl text-red-200">-${formatCurrency(Math.abs(wealth.totalDebt), data.userCurrency)}</div>
+            </div>
+          </div>
+        </div>
+      `;
+    },
+  },
+
+  // Real Estate & Debt
+  {
+    id: "real-estate-debt",
+    gradient: "from-orange-800 to-red-900",
+    render: (data) => {
+      const wealth = data.wealth;
+      const debt = Math.abs(wealth.totalDebt);
+      const netRealEstate = wealth.totalRealEstate - debt;
+      const hasRealEstate = wealth.totalRealEstate > 0;
+
+      if (!hasRealEstate && debt === 0) {
+         return `
+          <div class="flex flex-col items-center justify-center h-full text-center p-6">
+            <div class="text-8xl mb-6">🏠</div>
+            <div class="text-2xl font-bold text-white mb-2">No Real Estate or Debt</div>
+            <div class="text-white/60">Clean slate!</div>
+          </div>
+        `;
+      }
+
+      return `
+        <div class="flex flex-col items-center justify-center h-full text-center p-6">
+          <div class="text-8xl mb-6">🏠</div>
+          <div class="text-sm font-bold uppercase tracking-[0.2em] text-white/60 mb-4">Property & Liabilities</div>
+          <div class="text-3xl text-white mb-12">Real Estate vs Debt</div>
+
+          <div class="flex flex-col md:flex-row gap-8 items-center justify-center w-full max-w-4xl mb-12">
+
+            <!-- Real Estate -->
+            <div class="flex-1 w-full">
+              <div class="text-xl font-bold text-orange-300 mb-2">Real Estate Assets</div>
+              <div class="h-40 bg-orange-500/20 rounded-t-2xl relative w-full max-w-[200px] mx-auto border-b-4 border-orange-500 flex items-end justify-center overflow-hidden">
+                 <div class="w-full bg-orange-500/40 absolute bottom-0 transition-all duration-1000" style="height: 100%"></div>
+                 <div class="relative z-10 font-black text-2xl mb-4 text-white drop-shadow-md">${formatCurrency(wealth.totalRealEstate, data.userCurrency)}</div>
+              </div>
+            </div>
+
+            <div class="text-4xl font-black text-white/30">VS</div>
+
+            <!-- Debt -->
+            <div class="flex-1 w-full">
+              <div class="text-xl font-bold text-red-300 mb-2">Total Debt</div>
+              <div class="h-40 bg-red-500/20 rounded-t-2xl relative w-full max-w-[200px] mx-auto border-b-4 border-red-500 flex items-end justify-center overflow-hidden">
+                 <div class="w-full bg-red-500/40 absolute bottom-0 transition-all duration-1000" style="height: ${wealth.totalRealEstate > 0 ? Math.min(100, (debt / wealth.totalRealEstate) * 100) : 100}%"></div>
+                 <div class="relative z-10 font-black text-2xl mb-4 text-white drop-shadow-md">${formatCurrency(debt, data.userCurrency)}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white/10 backdrop-blur-md p-6 rounded-2xl border border-white/10">
+            <div class="text-white/70 mb-1">Net Real Estate Value</div>
+            <div class="text-4xl font-black ${netRealEstate >= 0 ? "text-green-400" : "text-red-400"}">
+              ${formatCurrency(netRealEstate, data.userCurrency)}
+            </div>
+          </div>
+        </div>
+      `;
+    },
+  },
+
   // Summary / Final Slide
   {
     id: "summary",
