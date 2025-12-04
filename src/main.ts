@@ -1,3 +1,4 @@
+import "../styles.css";
 import { api } from "./api.js";
 import { slides } from "./slides.js";
 import type { WrappedData, Currency, Portfolio, PortfolioSummaryChart, ChartDataSet } from "./types.js";

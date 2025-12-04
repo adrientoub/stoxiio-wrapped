@@ -18,9 +18,8 @@ app.use(
 // Parse JSON bodies
 app.use(express.json());
 
-// Serve static files
-app.use(express.static(path.join(__dirname)));
-app.use("/dist", express.static(path.join(__dirname, "dist")));
+// Serve static files from dist
+app.use(express.static(path.join(__dirname, "dist")));
 
 // Proxy all API requests
 app.all("/api/*", async (req, res) => {
@@ -81,10 +80,10 @@ app.all("/api/*", async (req, res) => {
 
 // Serve index.html for all other routes
 app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "index.html"));
+  res.sendFile(path.join(__dirname, "dist", "index.html"));
 });
 
 app.listen(PORT, () => {
-  console.log(`🚀 Finance Wrapped proxy server running at http://localhost:${PORT}`);
+  console.log(`🚀 Finance Wrapped server running at http://localhost:${PORT}`);
   console.log(`   Proxying API requests to ${API_BASE}`);
 });

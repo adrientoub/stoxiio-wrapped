@@ -1,12 +1,5 @@
 import type { WrappedData, Currency } from "./types.js";
-
-// Declare global libraries
-declare global {
-  interface Window {
-    confetti: any;
-    anime: any;
-  }
-}
+import confetti from "canvas-confetti";
 
 export interface SlideConfig {
   id: string;
@@ -40,19 +33,15 @@ function getYear(): number {
 
 // Confetti helpers
 const triggerConfetti = () => {
-  if (window.confetti) {
-    window.confetti({
-      particleCount: 100,
-      spread: 70,
-      origin: { y: 0.6 },
-      colors: ['#FFD700', '#FFA500', '#FF4500', '#1DB954', '#1E90FF']
-    });
-  }
+  confetti({
+    particleCount: 100,
+    spread: 70,
+    origin: { y: 0.6 },
+    colors: ['#FFD700', '#FFA500', '#FF4500', '#1DB954', '#1E90FF']
+  });
 };
 
 const triggerFireworks = () => {
-  if (!window.confetti) return;
-
   const duration = 3000;
   const animationEnd = Date.now() + duration;
   const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
@@ -67,8 +56,8 @@ const triggerFireworks = () => {
     }
 
     const particleCount = 50 * (timeLeft / duration);
-    window.confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } }));
-    window.confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } }));
+    confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } }));
+    confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } }));
   }, 250);
 };
 
