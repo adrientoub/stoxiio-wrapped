@@ -7,7 +7,11 @@
 }
 
 body {
-  font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
   background: var(--bg-dark);
   color: white;
   overflow: hidden;
@@ -61,16 +65,25 @@ body {
 
 /* Custom Animations */
 @keyframes wiggle {
-  0%, 100% { transform: rotate(-3deg); }
-  50% { transform: rotate(3deg); }
+  0%,
+  100% {
+    transform: rotate(-3deg);
+  }
+  50% {
+    transform: rotate(3deg);
+  }
 }
 .animate-wiggle {
   animation: wiggle 1s ease-in-out infinite;
 }
 
 @keyframes spin-slow {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 .animate-spin-slow {
   animation: spin-slow 8s linear infinite;
@@ -113,8 +126,12 @@ body {
     opacity: 1;
     transform: scale(1.05);
   }
-  70% { transform: scale(0.9); }
-  100% { transform: scale(1); }
+  70% {
+    transform: scale(0.9);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 .animate-bounce-in {
   animation: bounce-in 0.8s cubic-bezier(0.215, 0.61, 0.355, 1) forwards;
@@ -135,10 +152,18 @@ body {
 }
 
 /* Delays */
-.delay-100 { animation-delay: 100ms; }
-.delay-200 { animation-delay: 200ms; }
-.delay-300 { animation-delay: 300ms; }
-.delay-500 { animation-delay: 500ms; }
+.delay-100 {
+  animation-delay: 100ms;
+}
+.delay-200 {
+  animation-delay: 200ms;
+}
+.delay-300 {
+  animation-delay: 300ms;
+}
+.delay-500 {
+  animation-delay: 500ms;
+}
 
 /* Navigation Controls */
 .nav-controls {
@@ -200,6 +225,29 @@ body {
 .progress-dot.active {
   background: white;
   transform: scale(1.2);
+}
+
+/* Stocks Race Animation */
+.race-car {
+  will-change: left;
+}
+
+.winner-reveal {
+  transform: scale(0.8);
+}
+
+/* Race track shimmer effect */
+@keyframes track-shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.race-track {
+  animation: track-shimmer 1.5s ease-in-out infinite;
 }
 
 /* Scrollbar hide */

@@ -37,7 +37,7 @@ const triggerConfetti = () => {
     particleCount: 100,
     spread: 70,
     origin: { y: 0.6 },
-    colors: ['#FFD700', '#FFA500', '#FF4500', '#1DB954', '#1E90FF']
+    colors: ["#FFD700", "#FFA500", "#FF4500", "#1DB954", "#1E90FF"],
   });
 };
 
@@ -48,7 +48,7 @@ const triggerFireworks = () => {
 
   const randomInRange = (min: number, max: number) => Math.random() * (max - min) + min;
 
-  const interval: any = setInterval(function() {
+  const interval: any = setInterval(function () {
     const timeLeft = animationEnd - Date.now();
 
     if (timeLeft <= 0) {
@@ -56,8 +56,12 @@ const triggerFireworks = () => {
     }
 
     const particleCount = 50 * (timeLeft / duration);
-    confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } }));
-    confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } }));
+    confetti(
+      Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } }),
+    );
+    confetti(
+      Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } }),
+    );
   }, 250);
 };
 
@@ -81,7 +85,7 @@ export const slides: SlideConfig[] = [
     `,
     onShow: () => {
       triggerConfetti();
-    }
+    },
   },
 
   // Total Portfolio Value
@@ -189,7 +193,7 @@ export const slides: SlideConfig[] = [
     },
     onShow: (data) => {
       if (data.yearlyProfit > 0) triggerConfetti();
-    }
+    },
   },
 
   // Profit History
@@ -207,7 +211,7 @@ export const slides: SlideConfig[] = [
           const isPositive = p.profit >= 0;
 
           // Find percentage for this year
-          const percentageData = data.percentageByYear.find(pc => pc.year === p.year);
+          const percentageData = data.percentageByYear.find((pc) => pc.year === p.year);
           const percentage = percentageData ? percentageData.percentage : 0;
 
           return `
@@ -281,7 +285,7 @@ export const slides: SlideConfig[] = [
     },
     onShow: () => {
       triggerFireworks();
-    }
+    },
   },
 
   // Dividends
@@ -332,10 +336,10 @@ export const slides: SlideConfig[] = [
           angle: 90,
           spread: 100,
           origin: { y: 0 },
-          colors: ['#85bb65', '#ffffff']
+          colors: ["#85bb65", "#ffffff"],
         });
       }
-    }
+    },
   },
 
   // Vestings (Stock Awards)
@@ -622,7 +626,7 @@ export const slides: SlideConfig[] = [
       const hasRealEstate = wealth.totalRealEstate > 0;
 
       if (!hasRealEstate && debt === 0) {
-         return `
+        return `
           <div class="flex flex-col items-center justify-center h-full text-center p-6">
             <div class="text-8xl mb-6">🏠</div>
             <div class="text-2xl font-bold text-white mb-2">No Real Estate or Debt</div>
@@ -668,6 +672,152 @@ export const slides: SlideConfig[] = [
           </div>
         </div>
       `;
+    },
+  },
+
+  // Stocks Race Animation
+  {
+    id: "stocks-race",
+    gradient: "from-slate-900 to-gray-900",
+    render: (data) => {
+      // Collect all stocks from all portfolios and group by ticker
+      const stocksByTicker = new Map<string, { symbol: string; totalProfit: number; totalInvested: number }>();
+
+      data.portfolios.forEach((portfolio) => {
+        if (portfolio.stocks) {
+          portfolio.stocks.forEach((stock) => {
+            if (stock.totalProfitMainCurrency !== undefined) {
+              const existing = stocksByTicker.get(stock.symbol);
+              if (existing) {
+                existing.totalProfit += stock.totalProfitMainCurrency;
+                existing.totalInvested += stock.totalAmountMainCurrency || 0;
+              } else {
+                stocksByTicker.set(stock.symbol, {
+                  symbol: stock.symbol,
+                  totalProfit: stock.totalProfitMainCurrency,
+                  totalInvested: stock.totalAmountMainCurrency || 0,
+                });
+              }
+            }
+          });
+        }
+      });
+
+      // Calculate profit percentage for grouped stocks
+      const groupedStocks = Array.from(stocksByTicker.values()).map((stock) => ({
+        symbol: stock.symbol,
+        profit: stock.totalProfit,
+        profitPercent: stock.totalInvested > 0 ? (stock.totalProfit / stock.totalInvested) * 100 : 0,
+      }));
+
+      // Sort by profit percentage and get top performers
+      const topStocks = groupedStocks.sort((a, b) => b.profitPercent - a.profitPercent).slice(0, 8);
+
+      if (topStocks.length === 0) {
+        return `
+          <div class="flex flex-col items-center justify-center h-full text-center p-6">
+            <div class="text-8xl mb-6">🏁</div>
+            <div class="text-2xl font-bold text-white">No stock performance data available</div>
+          </div>
+        `;
+      }
+
+      const winner = topStocks[0];
+      const maxPercent = Math.max(...topStocks.map((s) => Math.abs(s.profitPercent)), 1);
+
+      // Race lanes - cars start at left edge, will animate via JS
+      const raceLanes = topStocks
+        .map((stock, index) => {
+          const position = Math.max(5, Math.min((stock.profitPercent / maxPercent) * 100, 92));
+          const isWinner = index === 0;
+          const isPositive = stock.profitPercent >= 0;
+
+          return `
+          <div class="race-lane flex items-center gap-3 mb-3 relative">
+            <div class="w-20 text-right">
+              <span class="font-mono font-bold text-sm ${isPositive ? "text-green-400" : "text-red-400"}">
+                ${stock.profitPercent >= 0 ? "+" : ""}${stock.profitPercent.toFixed(1)}%
+              </span>
+            </div>
+            <div class="flex-1 h-12 bg-black/30 rounded-full relative overflow-hidden border border-white/10">
+              <div class="race-track absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"></div>
+              <div
+                class="race-car absolute top-1/2 -translate-y-1/2 flex items-center gap-2"
+                style="left: -10%; transition: none;"
+                data-position="${position}%"
+                data-delay="${index * 200}"
+              >
+                <div class="w-10 h-10 rounded-full ${isWinner ? "bg-gradient-to-r from-yellow-400 to-amber-500 ring-2 ring-yellow-300 shadow-yellow-500/50" : isPositive ? "bg-gradient-to-r from-green-500 to-emerald-600" : "bg-gradient-to-r from-red-500 to-rose-600"} flex items-center justify-center shadow-lg">
+                  <span class="text-sm font-black text-white">${index + 1}</span>
+                </div>
+                <span class="font-bold text-white text-sm whitespace-nowrap drop-shadow-lg">${stock.symbol}</span>
+                ${isWinner ? '<span class="text-yellow-400 ml-1 text-lg">👑</span>' : ""}
+              </div>
+            </div>
+          </div>
+        `;
+        })
+        .join("");
+
+      return `
+        <div class="flex flex-col items-center justify-center h-full text-center p-6 w-full max-w-4xl mx-auto">
+          <div class="text-6xl mb-4 animate-bounce">🏁</div>
+          <div class="text-sm font-bold uppercase tracking-[0.2em] text-white/60 mb-2">${getYear()} Stock Race</div>
+          <div class="text-3xl font-bold text-white mb-8">Which stocks led the pack?</div>
+          
+          <div class="w-full mb-8" id="race-container">
+            ${raceLanes}
+          </div>
+
+          <div class="winner-reveal opacity-0" id="winner-reveal">
+            <div class="bg-gradient-to-r from-yellow-500/20 via-amber-500/30 to-yellow-500/20 backdrop-blur-md p-6 rounded-2xl border border-yellow-500/30">
+              <div class="text-yellow-400 text-sm font-bold uppercase tracking-wider mb-2">🏆 Winner of ${getYear()}</div>
+              <div class="text-4xl font-black text-white mb-2">${winner.symbol}</div>
+              <div class="text-2xl font-bold ${winner.profitPercent >= 0 ? "text-green-400" : "text-red-400"}">
+                ${winner.profitPercent >= 0 ? "+" : ""}${winner.profitPercent.toFixed(1)}% return
+              </div>
+              <div class="text-white/60 mt-2">
+                ${formatCurrency(winner.profit, data.userCurrency)} profit
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    },
+    onShow: (data) => {
+      // Start the race animation with staggered delays
+      const raceCars = document.querySelectorAll(".race-car") as NodeListOf<HTMLElement>;
+
+      raceCars.forEach((car) => {
+        const position = car.getAttribute("data-position");
+        const delay = parseInt(car.getAttribute("data-delay") || "0");
+
+        // First, ensure car is at starting position
+        car.style.left = "-10%";
+        car.style.transition = "none";
+
+        // Force reflow to ensure starting position is applied
+        car.offsetHeight;
+
+        // Then animate to final position with staggered delay
+        setTimeout(() => {
+          car.style.transition = "left 2.5s cubic-bezier(0.34, 1.56, 0.64, 1)";
+          if (position) {
+            car.style.left = position;
+          }
+        }, 100 + delay);
+      });
+
+      // Show winner reveal after race completes
+      setTimeout(() => {
+        const winnerReveal = document.getElementById("winner-reveal");
+        if (winnerReveal) {
+          winnerReveal.style.transition = "opacity 0.5s ease-out, transform 0.5s ease-out";
+          winnerReveal.style.opacity = "1";
+          winnerReveal.style.transform = "scale(1)";
+        }
+        triggerConfetti();
+      }, 3000);
     },
   },
 
@@ -718,6 +868,6 @@ export const slides: SlideConfig[] = [
     },
     onShow: () => {
       triggerFireworks();
-    }
+    },
   },
 ];
