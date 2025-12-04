@@ -1,9 +1,18 @@
 import type { WrappedData, Currency } from "./types.js";
 
+// Declare global libraries
+declare global {
+  interface Window {
+    confetti: any;
+    anime: any;
+  }
+}
+
 export interface SlideConfig {
   id: string;
   gradient: string;
   render: (data: WrappedData) => string;
+  onShow?: (data: WrappedData) => void;
 }
 
 function formatCurrency(amount: number, currency: Currency): string {
@@ -29,35 +38,81 @@ function getYear(): number {
   return new Date().getFullYear();
 }
 
+// Confetti helpers
+const triggerConfetti = () => {
+  if (window.confetti) {
+    window.confetti({
+      particleCount: 100,
+      spread: 70,
+      origin: { y: 0.6 },
+      colors: ['#FFD700', '#FFA500', '#FF4500', '#1DB954', '#1E90FF']
+    });
+  }
+};
+
+const triggerFireworks = () => {
+  if (!window.confetti) return;
+
+  const duration = 3000;
+  const animationEnd = Date.now() + duration;
+  const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+
+  const randomInRange = (min: number, max: number) => Math.random() * (max - min) + min;
+
+  const interval: any = setInterval(function() {
+    const timeLeft = animationEnd - Date.now();
+
+    if (timeLeft <= 0) {
+      return clearInterval(interval);
+    }
+
+    const particleCount = 50 * (timeLeft / duration);
+    window.confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } }));
+    window.confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } }));
+  }, 250);
+};
+
 export const slides: SlideConfig[] = [
   // Intro slide
   {
     id: "intro",
-    gradient: "gradient-1",
+    gradient: "from-indigo-600 to-purple-700",
     render: (data) => `
-      <div class="slide-content">
-        <div class="slide-icon">🎉</div>
-        <div class="slide-label">Welcome back</div>
-        <div class="slide-title">Ready to see how your finances did in ${getYear()}?</div>
-        <div class="slide-value" style="font-size: 48px;">${data.user.email.split("@")[0]}</div>
-        <div class="slide-subtitle">Let's dive into your financial year...</div>
+      <div class="flex flex-col items-center justify-center h-full text-center p-6 max-w-2xl mx-auto">
+        <div class="text-8xl mb-6 animate-bounce">🎉</div>
+        <div class="text-sm font-bold uppercase tracking-[0.2em] text-white/60 mb-4 animate-fade-in-up">Welcome back</div>
+        <div class="text-3xl md:text-5xl font-bold text-white mb-6 leading-tight animate-fade-in-up delay-100">
+          Ready to see how your finances did in <span class="text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-pink-500">${getYear()}</span>?
+        </div>
+        <div class="text-4xl md:text-6xl font-black text-white mb-8 animate-scale-in delay-200">
+          ${data.user.email.split("@")[0]}
+        </div>
+        <div class="text-xl text-white/80 animate-fade-in-up delay-300">Let's dive into your financial year...</div>
       </div>
     `,
+    onShow: () => {
+      triggerConfetti();
+    }
   },
 
   // Total Portfolio Value
   {
     id: "portfolio-value",
-    gradient: "gradient-3",
+    gradient: "from-blue-600 to-cyan-500",
     render: (data) => `
-      <div class="slide-content">
-        <div class="slide-icon">💼</div>
-        <div class="slide-label">Total Portfolio Value</div>
-        <div class="slide-title">Your investments are now worth</div>
-        <div class="slide-value">${formatCurrency(data.totalPortfolioValue, data.userCurrency)}</div>
-        <div class="slide-subtitle">Across ${data.portfolios.length} portfolio${data.portfolios.length !== 1 ? "s" : ""}</div>
-        <div class="comparison-change ${data.totalProfit >= 0 ? "positive" : "negative"}">
-          Total profit: ${formatCurrency(data.totalProfit, data.userCurrency)} (${formatPercentage(data.totalProfitPercent)})
+      <div class="flex flex-col items-center justify-center h-full text-center p-6">
+        <div class="text-7xl mb-6 animate-pulse">💼</div>
+        <div class="text-sm font-bold uppercase tracking-[0.2em] text-white/60 mb-4">Total Portfolio Value</div>
+        <div class="text-2xl text-white/90 mb-4">Your investments are now worth</div>
+        <div class="text-6xl md:text-8xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-white/70 mb-6 tracking-tight">
+          ${formatCurrency(data.totalPortfolioValue, data.userCurrency)}
+        </div>
+        <div class="text-xl text-white/70 mb-8">Across ${data.portfolios.length} portfolio${data.portfolios.length !== 1 ? "s" : ""}</div>
+
+        <div class="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white/10 backdrop-blur-md border border-white/20 ${data.totalProfit >= 0 ? "text-green-400" : "text-red-400"} font-bold text-xl animate-bounce-in">
+          <span>${data.totalProfit >= 0 ? "▲" : "▼"}</span>
+          <span>${formatCurrency(data.totalProfit, data.userCurrency)}</span>
+          <span class="opacity-70">(${formatPercentage(data.totalProfitPercent)})</span>
         </div>
       </div>
     `,
@@ -66,9 +121,8 @@ export const slides: SlideConfig[] = [
   // Portfolio breakdown
   {
     id: "portfolio-breakdown",
-    gradient: "gradient-7",
+    gradient: "from-pink-600 to-rose-500",
     render: (data) => {
-      // Sort by current value (invested + profit)
       const sortedPortfolios = [...data.portfolios].sort(
         (a, b) =>
           b.totalAmountMainCurrency +
@@ -81,27 +135,29 @@ export const slides: SlideConfig[] = [
         .map((p, i) => {
           const currentValue = p.totalAmountMainCurrency + p.totalProfitMainCurrency;
           const profitPercent = p.totalProfitPercentMainCurrency * 100;
+          const isProfit = p.totalProfitMainCurrency >= 0;
+
           return `
-          <div class="ranking-item">
-            <div class="ranking-position">${i + 1}</div>
-            <div class="ranking-info">
-              <div class="ranking-name">${p.name}</div>
-              <div class="ranking-subtitle" style="font-size: 12px; opacity: 0.7; color: ${p.totalProfitMainCurrency >= 0 ? "#4ade80" : "#f87171"}">
-                ${p.totalProfitMainCurrency >= 0 ? "+" : ""}${formatCurrency(p.totalProfitMainCurrency, data.userCurrency)} (${profitPercent >= 0 ? "+" : ""}${profitPercent.toFixed(0)}%)
+          <div class="flex items-center p-4 bg-white/10 rounded-xl mb-3 hover:bg-white/20 transition-all transform hover:scale-[1.02] cursor-default group">
+            <div class="text-2xl font-black text-white/30 w-12 group-hover:text-white/50 transition-colors">#${i + 1}</div>
+            <div class="flex-1 text-left">
+              <div class="font-bold text-lg text-white">${p.name}</div>
+              <div class="text-xs font-medium ${isProfit ? "text-green-300" : "text-red-300"}">
+                ${isProfit ? "+" : ""}${formatCurrency(p.totalProfitMainCurrency, data.userCurrency)} (${profitPercent >= 0 ? "+" : ""}${profitPercent.toFixed(0)}%)
               </div>
             </div>
-            <div class="ranking-value">${formatCurrency(currentValue, data.userCurrency)}</div>
+            <div class="font-bold text-xl text-white">${formatCurrency(currentValue, data.userCurrency)}</div>
           </div>
         `;
         })
         .join("");
 
       return `
-        <div class="slide-content">
-          <div class="slide-icon">📊</div>
-          <div class="slide-label">Portfolio Breakdown</div>
-          <div class="slide-title">Your portfolios by value</div>
-          <div class="ranking-list">
+        <div class="flex flex-col items-center justify-center h-full text-center p-6 w-full max-w-3xl mx-auto">
+          <div class="text-6xl mb-6">📊</div>
+          <div class="text-sm font-bold uppercase tracking-[0.2em] text-white/60 mb-2">Portfolio Breakdown</div>
+          <div class="text-3xl font-bold text-white mb-8">Your portfolios by value</div>
+          <div class="w-full space-y-2 animate-slide-up">
             ${portfolioList}
           </div>
         </div>
@@ -112,38 +168,45 @@ export const slides: SlideConfig[] = [
   // Yearly Performance
   {
     id: "yearly-performance",
-    gradient: "gradient-4",
+    gradient: "from-emerald-600 to-teal-500",
     render: (data) => {
       const isPositive = data.yearlyProfit >= 0;
       return `
-        <div class="slide-content">
-          <div class="slide-icon">${isPositive ? "📈" : "📉"}</div>
-          <div class="slide-label">${getYear()} Performance</div>
-          <div class="slide-title">This year your portfolios ${isPositive ? "gained" : "lost"}</div>
-          <div class="slide-value" style="color: ${isPositive ? "#4ade80" : "#f87171"}">
+        <div class="flex flex-col items-center justify-center h-full text-center p-6">
+          <div class="text-8xl mb-6 animate-wiggle">${isPositive ? "📈" : "📉"}</div>
+          <div class="text-sm font-bold uppercase tracking-[0.2em] text-white/60 mb-4">${getYear()} Performance</div>
+          <div class="text-3xl text-white mb-4">This year your portfolios ${isPositive ? "gained" : "lost"}</div>
+
+          <div class="text-7xl md:text-9xl font-black mb-4 ${isPositive ? "text-green-300" : "text-red-300"} drop-shadow-lg">
             ${formatCurrency(data.yearlyProfit, data.userCurrency)}
           </div>
-          <div class="slide-subtitle">${formatPercentage(data.yearlyProfitPercentage)} return</div>
 
-          <div class="comparison-container">
-            <div class="comparison-item">
-              <div class="comparison-year">${getYear() - 1}</div>
-              <div class="comparison-value">${formatCurrency(data.previousYearProfit, data.userCurrency)}</div>
+          <div class="text-2xl font-bold text-white/80 mb-12 bg-white/10 px-6 py-2 rounded-full">
+            ${formatPercentage(data.yearlyProfitPercentage)} return
+          </div>
+
+          <div class="flex gap-8 w-full max-w-lg">
+            <div class="flex-1 bg-black/20 p-6 rounded-2xl backdrop-blur-sm">
+              <div class="text-sm text-white/50 mb-2">${getYear() - 1}</div>
+              <div class="text-2xl font-bold text-white">${formatCurrency(data.previousYearProfit, data.userCurrency)}</div>
             </div>
-            <div class="comparison-item">
-              <div class="comparison-year">${getYear()}</div>
-              <div class="comparison-value">${formatCurrency(data.yearlyProfit, data.userCurrency)}</div>
+            <div class="flex-1 bg-white/20 p-6 rounded-2xl backdrop-blur-sm border border-white/30 transform scale-110 shadow-xl">
+              <div class="text-sm text-white/80 mb-2">${getYear()}</div>
+              <div class="text-3xl font-bold text-white">${formatCurrency(data.yearlyProfit, data.userCurrency)}</div>
             </div>
           </div>
         </div>
       `;
     },
+    onShow: (data) => {
+      if (data.yearlyProfit > 0) triggerConfetti();
+    }
   },
 
   // Profit History
   {
     id: "profit-history",
-    gradient: "gradient-8",
+    gradient: "from-violet-600 to-fuchsia-600",
     render: (data) => {
       const profits = data.profitByYear.filter((p) => p.year !== "null" && p.profit !== null);
       const recentProfits = profits.slice(-5);
@@ -154,23 +217,25 @@ export const slides: SlideConfig[] = [
           const height = Math.min(100, (Math.abs(p.profit) / maxProfit) * 100);
           const isPositive = p.profit >= 0;
           return `
-          <div class="bar-item">
-            <div class="bar-container">
-              <div class="bar-fill ${isPositive ? "positive" : "negative"}" style="height: ${height}%"></div>
+          <div class="flex flex-col items-center gap-2 flex-1 h-full justify-end group">
+            <div class="relative w-full max-w-[60px] h-[200px] bg-black/20 rounded-t-xl flex items-end overflow-hidden">
+              <div class="w-full transition-all duration-1000 ease-out ${isPositive ? "bg-gradient-to-t from-green-500 to-green-300" : "bg-gradient-to-t from-red-500 to-red-300"} group-hover:opacity-90" style="height: ${height}%"></div>
             </div>
-            <div class="bar-label">${p.year}</div>
-            <div class="bar-value" style="color: ${isPositive ? "#4ade80" : "#f87171"}">${formatCurrency(p.profit, data.userCurrency)}</div>
+            <div class="text-sm font-bold text-white/70">${p.year}</div>
+            <div class="text-xs font-bold ${isPositive ? "text-green-300" : "text-red-300"} opacity-0 group-hover:opacity-100 transition-opacity absolute -top-8 bg-black/80 px-2 py-1 rounded pointer-events-none">
+              ${formatCurrency(p.profit, data.userCurrency)}
+            </div>
           </div>
         `;
         })
         .join("");
 
       return `
-        <div class="slide-content">
-          <div class="slide-icon">📊</div>
-          <div class="slide-label">Profit History</div>
-          <div class="slide-title">Your portfolio gains over the years</div>
-          <div class="bar-chart">
+        <div class="flex flex-col items-center justify-center h-full text-center p-6 w-full">
+          <div class="text-6xl mb-6">📊</div>
+          <div class="text-sm font-bold uppercase tracking-[0.2em] text-white/60 mb-2">Profit History</div>
+          <div class="text-3xl font-bold text-white mb-12">Your portfolio gains over the years</div>
+          <div class="flex items-end justify-center gap-4 h-[250px] w-full max-w-2xl relative">
             ${barsHtml}
           </div>
         </div>
@@ -181,54 +246,64 @@ export const slides: SlideConfig[] = [
   // Best Performing Portfolio
   {
     id: "best-portfolio",
-    gradient: "gradient-5",
+    gradient: "from-amber-500 to-orange-600",
     render: (data) => {
       if (!data.bestPerformingPortfolio) {
         return `
-          <div class="slide-content">
-            <div class="slide-icon">🏆</div>
-            <div class="slide-label">Top Performer</div>
-            <div class="slide-title">No portfolio performance data available</div>
+          <div class="flex flex-col items-center justify-center h-full text-center p-6">
+            <div class="text-8xl mb-6">🏆</div>
+            <div class="text-2xl font-bold text-white">No portfolio performance data available</div>
           </div>
         `;
       }
 
       return `
-        <div class="slide-content">
-          <div class="slide-icon">🏆</div>
-          <div class="slide-label">Top Performer of ${getYear()}</div>
-          <div class="slide-title">Your best performing portfolio was</div>
-          <div class="slide-value" style="font-size: 36px;">${data.bestPerformingPortfolio.name}</div>
-          <div class="slide-subtitle">
-            ${formatCurrency(data.bestPerformingPortfolio.profit || 0, data.userCurrency)} profit this year
-          </div>
-          <div class="comparison-change positive">
-            Total value: ${formatCurrency(data.bestPerformingPortfolio.totalAmountMainCurrency + data.bestPerformingPortfolio.totalProfitMainCurrency, data.userCurrency)}
+        <div class="flex flex-col items-center justify-center h-full text-center p-6 relative overflow-hidden">
+          <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjIiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4xKSIvPjwvc3ZnPg==')] opacity-30"></div>
+
+          <div class="text-8xl mb-6 animate-bounce">🏆</div>
+          <div class="text-sm font-bold uppercase tracking-[0.2em] text-white/60 mb-4">Top Performer of ${getYear()}</div>
+          <div class="text-3xl text-white mb-8">Your best performing portfolio was</div>
+
+          <div class="relative">
+            <div class="absolute -inset-4 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-2xl blur-lg opacity-50 animate-pulse"></div>
+            <div class="relative bg-black/30 backdrop-blur-xl p-8 rounded-2xl border border-white/20">
+              <div class="text-4xl md:text-6xl font-black text-white mb-4">${data.bestPerformingPortfolio.name}</div>
+              <div class="text-2xl text-green-300 font-bold mb-2">
+                ${formatCurrency(data.bestPerformingPortfolio.profit || 0, data.userCurrency)} profit this year
+              </div>
+              <div class="text-white/60">
+                Total Value: ${formatCurrency(data.bestPerformingPortfolio.totalAmountMainCurrency + data.bestPerformingPortfolio.totalProfitMainCurrency, data.userCurrency)}
+              </div>
+            </div>
           </div>
         </div>
       `;
     },
+    onShow: () => {
+      triggerFireworks();
+    }
   },
 
   // Dividends
   {
     id: "dividends",
-    gradient: "gradient-2",
+    gradient: "from-green-600 to-emerald-700",
     render: (data) => {
       const topStocks = data.topDividendStocks.slice(0, 3);
       const stocksList =
         topStocks.length > 0
           ? `
-          <div class="ranking-list">
+          <div class="w-full max-w-md mt-8 space-y-3">
             ${topStocks
               .map(
                 (stock, i) => `
-              <div class="ranking-item">
-                <div class="ranking-position">${i + 1}</div>
-                <div class="ranking-info">
-                  <div class="ranking-name">${stock.symbol}</div>
+              <div class="flex items-center justify-between p-4 bg-white/10 rounded-xl">
+                <div class="flex items-center gap-4">
+                  <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center font-bold text-sm">${i + 1}</div>
+                  <div class="font-bold text-lg">${stock.symbol}</div>
                 </div>
-                <div class="ranking-value">${formatCurrency(stock.amount, data.userCurrency)}</div>
+                <div class="font-mono font-bold text-green-300">${formatCurrency(stock.amount, data.userCurrency)}</div>
               </div>
             `,
               )
@@ -238,56 +313,70 @@ export const slides: SlideConfig[] = [
           : "";
 
       return `
-        <div class="slide-content">
-          <div class="slide-icon">💸</div>
-          <div class="slide-label">Passive Income</div>
-          <div class="slide-title">You received in dividends</div>
-          <div class="slide-value">${formatCurrency(data.totalDividends, data.userCurrency)}</div>
-          <div class="slide-subtitle">Money while you sleep 😴</div>
+        <div class="flex flex-col items-center justify-center h-full text-center p-6">
+          <div class="text-8xl mb-6 animate-pulse">💸</div>
+          <div class="text-sm font-bold uppercase tracking-[0.2em] text-white/60 mb-4">Passive Income</div>
+          <div class="text-3xl text-white mb-4">You received in dividends</div>
+          <div class="text-6xl md:text-8xl font-black text-transparent bg-clip-text bg-gradient-to-b from-green-200 to-green-500 mb-4">
+            ${formatCurrency(data.totalDividends, data.userCurrency)}
+          </div>
+          <div class="text-xl text-white/70 italic">Money while you sleep 😴</div>
           ${stocksList}
         </div>
       `;
     },
+    onShow: () => {
+      // Rain effect with money emojis? For now just confetti
+      if (window.confetti) {
+        window.confetti({
+          particleCount: 50,
+          angle: 90,
+          spread: 100,
+          origin: { y: 0 },
+          colors: ['#85bb65', '#ffffff']
+        });
+      }
+    }
   },
 
   // Vestings (Stock Awards)
   {
     id: "vestings",
-    gradient: "gradient-8",
+    gradient: "from-purple-800 to-indigo-900",
     render: (data) => {
       if (data.totalVestings === 0) {
         return `
-          <div class="slide-content">
-            <div class="slide-icon">🎁</div>
-            <div class="slide-label">Stock Vestings</div>
-            <div class="slide-title">No stock vestings this year</div>
-            <div class="slide-subtitle">Maybe next year! 🤞</div>
+          <div class="flex flex-col items-center justify-center h-full text-center p-6">
+            <div class="text-8xl mb-6">🎁</div>
+            <div class="text-2xl font-bold text-white mb-2">No stock vestings this year</div>
+            <div class="text-white/60">Maybe next year! 🤞</div>
           </div>
         `;
       }
 
-      // Show vesting history
       const vestings = data.vestingByYear.filter((v) => v.year !== "null" && v.vesting > 0);
       const recentVestings = vestings.slice(-4);
       const vestingHistory = recentVestings
         .map(
           (v) => `
-        <div class="comparison-item">
-          <div class="comparison-year">${v.year}</div>
-          <div class="comparison-value">${formatCurrency(v.vesting, data.userCurrency)}</div>
+        <div class="bg-white/10 p-4 rounded-xl text-center min-w-[100px]">
+          <div class="text-sm text-white/50 mb-1">${v.year}</div>
+          <div class="font-bold text-white">${formatCurrency(v.vesting, data.userCurrency)}</div>
         </div>
       `,
         )
         .join("");
 
       return `
-        <div class="slide-content">
-          <div class="slide-icon">🎁</div>
-          <div class="slide-label">Stock Vestings</div>
-          <div class="slide-title">Your stock awards vested worth</div>
-          <div class="slide-value">${formatCurrency(data.totalVestings, data.userCurrency)}</div>
-          <div class="slide-subtitle">Equity compensation for the win! 🚀</div>
-          <div class="comparison-container" style="flex-wrap: wrap">
+        <div class="flex flex-col items-center justify-center h-full text-center p-6">
+          <div class="text-8xl mb-6 animate-bounce">🎁</div>
+          <div class="text-sm font-bold uppercase tracking-[0.2em] text-white/60 mb-4">Stock Vestings</div>
+          <div class="text-3xl text-white mb-6">Your stock awards vested worth</div>
+          <div class="text-6xl md:text-8xl font-black text-purple-300 mb-6 drop-shadow-lg">
+            ${formatCurrency(data.totalVestings, data.userCurrency)}
+          </div>
+          <div class="text-xl text-white/80 mb-12">Equity compensation for the win! 🚀</div>
+          <div class="flex flex-wrap justify-center gap-4">
             ${vestingHistory}
           </div>
         </div>
@@ -298,32 +387,36 @@ export const slides: SlideConfig[] = [
   // Income vs Expenses
   {
     id: "income-expenses",
-    gradient: "gradient-4",
+    gradient: "from-slate-800 to-slate-900",
     render: (data) => {
       const savings = data.totalIncome + data.totalExpenses; // expenses are negative
       const savingsRate = data.totalIncome > 0 ? (savings / data.totalIncome) * 100 : 0;
 
       return `
-        <div class="slide-content">
-          <div class="slide-icon">💰</div>
-          <div class="slide-label">Cash Flow</div>
-          <div class="slide-title">Your income vs expenses</div>
+        <div class="flex flex-col items-center justify-center h-full text-center p-6">
+          <div class="text-8xl mb-6">💰</div>
+          <div class="text-sm font-bold uppercase tracking-[0.2em] text-white/60 mb-4">Cash Flow</div>
+          <div class="text-3xl text-white mb-12">Your income vs expenses</div>
 
-          <div class="comparison-container">
-            <div class="comparison-item">
-              <div class="comparison-year">Income</div>
-              <div class="comparison-value" style="color: #ffffff; text-shadow: 0 2px 4px rgba(0,0,0,0.3)">${formatCurrency(data.totalIncome, data.userCurrency)}</div>
+          <div class="flex gap-8 mb-12 w-full max-w-2xl">
+            <div class="flex-1 bg-green-500/20 p-6 rounded-2xl border border-green-500/30">
+              <div class="text-sm uppercase tracking-wider text-green-300 mb-2">Income</div>
+              <div class="text-2xl md:text-4xl font-bold text-white">${formatCurrency(data.totalIncome, data.userCurrency)}</div>
             </div>
-            <div class="comparison-item">
-              <div class="comparison-year">Expenses</div>
-              <div class="comparison-value" style="color: #ffffff; text-shadow: 0 2px 4px rgba(0,0,0,0.3)">${formatCurrency(Math.abs(data.totalExpenses), data.userCurrency)}</div>
+            <div class="flex-1 bg-red-500/20 p-6 rounded-2xl border border-red-500/30">
+              <div class="text-sm uppercase tracking-wider text-red-300 mb-2">Expenses</div>
+              <div class="text-2xl md:text-4xl font-bold text-white">${formatCurrency(Math.abs(data.totalExpenses), data.userCurrency)}</div>
             </div>
           </div>
 
-          <div class="comparison-change ${savings >= 0 ? "positive" : "negative"}">
-            ${savings >= 0 ? "Saved" : "Overspent"}: ${formatCurrency(Math.abs(savings), data.userCurrency)}
-            <br>
-            <span style="font-size: 14px; opacity: 0.8">${savingsRate.toFixed(0)}% savings rate</span>
+          <div class="bg-white/10 backdrop-blur-md p-8 rounded-3xl border border-white/10 max-w-xl w-full">
+            <div class="text-xl text-white/70 mb-2">${savings >= 0 ? "You Saved" : "You Overspent"}</div>
+            <div class="text-5xl font-black ${savings >= 0 ? "text-green-400" : "text-red-400"} mb-4">
+              ${formatCurrency(Math.abs(savings), data.userCurrency)}
+            </div>
+            <div class="inline-block px-4 py-1 rounded-full bg-white/10 text-sm font-bold">
+              ${savingsRate.toFixed(0)}% savings rate
+            </div>
           </div>
         </div>
       `;
@@ -333,17 +426,16 @@ export const slides: SlideConfig[] = [
   // Income Evolution
   {
     id: "income-evolution",
-    gradient: "gradient-1",
+    gradient: "from-blue-800 to-indigo-900",
     render: (data) => {
       const incomes = data.incomeByYear.filter((i) => i.year !== "null" && i.income > 0);
       const recentIncomes = incomes.slice(-5);
 
       if (recentIncomes.length < 2) {
         return `
-          <div class="slide-content">
-            <div class="slide-icon">📈</div>
-            <div class="slide-label">Income Growth</div>
-            <div class="slide-title">Not enough income data to show evolution</div>
+          <div class="flex flex-col items-center justify-center h-full text-center p-6">
+            <div class="text-8xl mb-6">📈</div>
+            <div class="text-2xl font-bold text-white">Not enough income data to show evolution</div>
           </div>
         `;
       }
@@ -355,23 +447,26 @@ export const slides: SlideConfig[] = [
       const incomeList = recentIncomes
         .map(
           (i) => `
-        <div class="ranking-item">
-          <div class="ranking-position">${i.year}</div>
-          <div class="ranking-value">${formatCurrency(i.income, data.userCurrency)}</div>
+        <div class="flex justify-between items-center p-3 border-b border-white/10 last:border-0">
+          <div class="font-medium text-white/60">${i.year}</div>
+          <div class="font-bold text-white">${formatCurrency(i.income, data.userCurrency)}</div>
         </div>
       `,
         )
         .join("");
 
       return `
-        <div class="slide-content">
-          <div class="slide-icon">💵</div>
-          <div class="slide-label">Income Evolution</div>
-          <div class="slide-title">Your income over the years</div>
-          <div class="comparison-change ${growth >= 0 ? "positive" : "negative"}">
-            ${growth >= 0 ? "+" : ""}${growth.toFixed(0)}% since ${firstYear.year}
+        <div class="flex flex-col items-center justify-center h-full text-center p-6">
+          <div class="text-8xl mb-6">💵</div>
+          <div class="text-sm font-bold uppercase tracking-[0.2em] text-white/60 mb-4">Income Evolution</div>
+          <div class="text-3xl text-white mb-8">Your income over the years</div>
+
+          <div class="text-6xl font-black ${growth >= 0 ? "text-green-400" : "text-red-400"} mb-2">
+            ${growth >= 0 ? "+" : ""}${growth.toFixed(0)}%
           </div>
-          <div class="ranking-list" style="margin-top: 20px;">
+          <div class="text-white/60 mb-12">since ${firstYear.year}</div>
+
+          <div class="bg-black/20 rounded-2xl p-6 w-full max-w-md backdrop-blur-sm">
             ${incomeList}
           </div>
         </div>
@@ -382,20 +477,18 @@ export const slides: SlideConfig[] = [
   // Goals Progress
   {
     id: "goals",
-    gradient: "gradient-3",
+    gradient: "from-teal-600 to-cyan-700",
     render: (data) => {
       if (data.goals.length === 0) {
         return `
-          <div class="slide-content">
-            <div class="slide-icon">🎯</div>
-            <div class="slide-label">Financial Goals</div>
-            <div class="slide-title">No goals set yet</div>
-            <div class="slide-subtitle">Set some goals to track your progress!</div>
+          <div class="flex flex-col items-center justify-center h-full text-center p-6">
+            <div class="text-8xl mb-6">🎯</div>
+            <div class="text-2xl font-bold text-white mb-2">No goals set yet</div>
+            <div class="text-white/60">Set some goals to track your progress!</div>
           </div>
         `;
       }
 
-      // Calculate progress for each goal (estimate based on total portfolio)
       const goalsHtml = data.goals
         .slice(0, 3)
         .map((goal) => {
@@ -404,17 +497,17 @@ export const slides: SlideConfig[] = [
           const yearsLeft = Math.max(0, (targetDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24 * 365));
 
           return `
-          <div class="progress-goal">
-            <div class="progress-header">
-              <span class="progress-name">${goal.name}</span>
-              <span class="progress-percentage">${progress.toFixed(0)}%</span>
+          <div class="bg-white/10 rounded-2xl p-6 mb-4 w-full">
+            <div class="flex justify-between items-end mb-2">
+              <span class="font-bold text-xl">${goal.name}</span>
+              <span class="font-bold text-2xl text-cyan-300">${progress.toFixed(0)}%</span>
             </div>
-            <div class="progress-bar-bg">
-              <div class="progress-bar-fill" style="width: ${progress}%"></div>
+            <div class="h-3 bg-black/20 rounded-full overflow-hidden mb-3">
+              <div class="h-full bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full transition-all duration-1000" style="width: ${progress}%"></div>
             </div>
-            <div class="progress-amounts">
+            <div class="flex justify-between text-sm text-white/60">
               <span>${formatCurrency(data.totalPortfolioValue, data.userCurrency)}</span>
-              <span>${formatCurrency(goal.targetAmount, data.userCurrency)} (${yearsLeft.toFixed(0)}y left)</span>
+              <span>Target: ${formatCurrency(goal.targetAmount, data.userCurrency)} (${yearsLeft.toFixed(1)}y left)</span>
             </div>
           </div>
         `;
@@ -422,11 +515,11 @@ export const slides: SlideConfig[] = [
         .join("");
 
       return `
-        <div class="slide-content">
-          <div class="slide-icon">🎯</div>
-          <div class="slide-label">Financial Goals</div>
-          <div class="slide-title">Your progress towards your dreams</div>
-          <div class="progress-container">
+        <div class="flex flex-col items-center justify-center h-full text-center p-6 w-full max-w-2xl mx-auto">
+          <div class="text-8xl mb-6">🎯</div>
+          <div class="text-sm font-bold uppercase tracking-[0.2em] text-white/60 mb-4">Financial Goals</div>
+          <div class="text-3xl text-white mb-8">Your progress towards your dreams</div>
+          <div class="w-full">
             ${goalsHtml}
           </div>
         </div>
@@ -437,41 +530,50 @@ export const slides: SlideConfig[] = [
   // Summary / Final Slide
   {
     id: "summary",
-    gradient: "gradient-8",
+    gradient: "from-fuchsia-600 to-purple-600",
     render: (data) => {
       const totalGains = data.yearlyProfit + data.totalDividends + data.totalVestings;
 
       return `
-        <div class="slide-content final-slide">
-          <div class="slide-icon">✨</div>
-          <div class="slide-label">${getYear()} Wrapped</div>
-          <div class="slide-title">Your total financial gains this year</div>
-          <div class="slide-value">${formatCurrency(totalGains, data.userCurrency)}</div>
+        <div class="flex flex-col items-center justify-center h-full text-center p-6">
+          <div class="text-8xl mb-6 animate-spin-slow">✨</div>
+          <div class="text-sm font-bold uppercase tracking-[0.2em] text-white/60 mb-4">${getYear()} Wrapped</div>
+          <div class="text-3xl text-white mb-6">Your total financial gains this year</div>
+          <div class="text-6xl md:text-8xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-200 via-white to-yellow-200 mb-12 drop-shadow-2xl">
+            ${formatCurrency(totalGains, data.userCurrency)}
+          </div>
 
-          <div class="slide-detail">
-            <div class="slide-detail-row">
-              <span class="slide-detail-label">Portfolio Gains</span>
-              <span class="slide-detail-value">${formatCurrency(data.yearlyProfit, data.userCurrency)}</span>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-2xl">
+            <div class="bg-white/10 p-4 rounded-xl flex justify-between items-center">
+              <span class="text-white/70">Portfolio Gains</span>
+              <span class="font-bold">${formatCurrency(data.yearlyProfit, data.userCurrency)}</span>
             </div>
-            <div class="slide-detail-row">
-              <span class="slide-detail-label">Dividends</span>
-              <span class="slide-detail-value">${formatCurrency(data.totalDividends, data.userCurrency)}</span>
+            <div class="bg-white/10 p-4 rounded-xl flex justify-between items-center">
+              <span class="text-white/70">Dividends</span>
+              <span class="font-bold">${formatCurrency(data.totalDividends, data.userCurrency)}</span>
             </div>
-            <div class="slide-detail-row">
-              <span class="slide-detail-label">Vestings</span>
-              <span class="slide-detail-value">${formatCurrency(data.totalVestings, data.userCurrency)}</span>
+            <div class="bg-white/10 p-4 rounded-xl flex justify-between items-center">
+              <span class="text-white/70">Vestings</span>
+              <span class="font-bold">${formatCurrency(data.totalVestings, data.userCurrency)}</span>
             </div>
-            <div class="slide-detail-row">
-              <span class="slide-detail-label">Net Savings</span>
-              <span class="slide-detail-value">${formatCurrency(data.totalIncome + data.totalExpenses, data.userCurrency)}</span>
+            <div class="bg-white/10 p-4 rounded-xl flex justify-between items-center">
+              <span class="text-white/70">Net Savings</span>
+              <span class="font-bold">${formatCurrency(data.totalIncome + data.totalExpenses, data.userCurrency)}</span>
             </div>
           </div>
 
-          <div class="slide-subtitle" style="margin-top: 24px">
+          <div class="mt-12 text-xl text-white/80 font-medium">
             Here's to an even better ${getYear() + 1}! 🥂
           </div>
+
+          <button class="mt-8 px-8 py-4 bg-white text-purple-600 rounded-full font-bold text-lg hover:scale-105 transition-transform shadow-xl" onclick="window.location.reload()">
+            Watch Again
+          </button>
         </div>
       `;
     },
+    onShow: () => {
+      triggerFireworks();
+    }
   },
 ];

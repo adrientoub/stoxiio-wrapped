@@ -195,12 +195,15 @@ function renderSlides(data: WrappedData) {
   slides.forEach((slide, index) => {
     // Create slide element
     const slideEl = document.createElement("div");
-    slideEl.className = `slide ${slide.gradient}`;
+    slideEl.className = `slide bg-gradient-to-br ${slide.gradient}`;
     slideEl.id = `slide-${slide.id}`;
     slideEl.innerHTML = slide.render(data);
 
     if (index === 0) {
       slideEl.classList.add("active");
+      if (slide.onShow && data) {
+        setTimeout(() => slide.onShow!(data), 500);
+      }
     }
 
     slidesContainer.appendChild(slideEl);
@@ -237,6 +240,12 @@ function goToSlide(index: number) {
 
   currentSlide = index;
   updateNavButtons();
+
+  // Trigger onShow event
+  const slideConfig = slides[index];
+  if (slideConfig.onShow && wrappedData) {
+    slideConfig.onShow(wrappedData);
+  }
 }
 
 function updateNavButtons() {
