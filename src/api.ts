@@ -1,6 +1,6 @@
-import type { AuthResponse, Currency, Portfolio, Goal, IncomeStatement, User } from './types.js';
+import type { AuthResponse, Currency, Portfolio, Goal, IncomeStatement, User } from "./types.js";
 
-const API_BASE = '/api';
+const API_BASE = "/api";
 
 class ApiClient {
   private accessToken: string | null = null;
@@ -9,29 +9,26 @@ class ApiClient {
     this.accessToken = token;
   }
 
-  private async request<T>(
-    endpoint: string,
-    options: RequestInit = {}
-  ): Promise<T> {
+  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
+      "Content-Type": "application/json",
+      Accept: "application/json",
       ...options.headers,
     };
 
     if (this.accessToken) {
-      (headers as Record<string, string>)['Authorization'] = `Bearer ${this.accessToken}`;
+      (headers as Record<string, string>)["Authorization"] = `Bearer ${this.accessToken}`;
     }
 
     const response = await fetch(`${API_BASE}${endpoint}`, {
       ...options,
       headers,
-      credentials: 'include',
+      credentials: "include",
     });
 
     if (!response.ok) {
       if (response.status === 401) {
-        throw new Error('Authentication required');
+        throw new Error("Authentication required");
       }
       throw new Error(`API error: ${response.status}`);
     }
@@ -46,8 +43,8 @@ class ApiClient {
   }
 
   async authenticate(email: string, password: string): Promise<AuthResponse> {
-    const response = await this.request<AuthResponse>('/users/authenticate', {
-      method: 'POST',
+    const response = await this.request<AuthResponse>("/users/authenticate", {
+      method: "POST",
       body: JSON.stringify({
         Email: email,
         Password: password,
@@ -63,19 +60,19 @@ class ApiClient {
   }
 
   async getUserInfo(): Promise<User> {
-    return this.request<User>('/users/info');
+    return this.request<User>("/users/info");
   }
 
   async getCurrencies(): Promise<Currency[]> {
-    return this.request<Currency[]>('/currencies');
+    return this.request<Currency[]>("/currencies");
   }
 
   async getPortfolios(): Promise<Portfolio[]> {
-    return this.request<Portfolio[]>('/portfolios');
+    return this.request<Portfolio[]>("/portfolios");
   }
 
   async getPortfoliosSummary(): Promise<any> {
-    return this.request<any>('/portfolios/summary');
+    return this.request<any>("/portfolios/summary");
   }
 
   async getPortfolio(portfolioId: number): Promise<Portfolio> {
@@ -83,15 +80,15 @@ class ApiClient {
   }
 
   async getGoals(): Promise<Goal[]> {
-    return this.request<Goal[]>('/goals');
+    return this.request<Goal[]>("/goals");
   }
 
   async getIncomeStatements(): Promise<IncomeStatement> {
-    return this.request<IncomeStatement>('/incomestatements');
+    return this.request<IncomeStatement>("/incomestatements");
   }
 
   async getDashboards(type?: number): Promise<any[]> {
-    const query = type !== undefined ? `?types=${type}` : '';
+    const query = type !== undefined ? `?types=${type}` : "";
     return this.request<any[]>(`/dashboards${query}`);
   }
 

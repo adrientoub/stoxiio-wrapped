@@ -1,4 +1,4 @@
-import type { WrappedData, Currency } from './types.js';
+import type { WrappedData, Currency } from "./types.js";
 
 export interface SlideConfig {
   id: string;
@@ -7,12 +7,12 @@ export interface SlideConfig {
 }
 
 function formatCurrency(amount: number, currency: Currency): string {
-  const formatted = new Intl.NumberFormat('en-US', {
+  const formatted = new Intl.NumberFormat("en-US", {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(Math.abs(amount));
 
-  const sign = amount < 0 ? '-' : '';
+  const sign = amount < 0 ? "-" : "";
 
   if (currency.symbol.length === 1) {
     return `${sign}${currency.symbol}${formatted}`;
@@ -21,7 +21,7 @@ function formatCurrency(amount: number, currency: Currency): string {
 }
 
 function formatPercentage(value: number): string {
-  const sign = value >= 0 ? '+' : '';
+  const sign = value >= 0 ? "+" : "";
   return `${sign}${value.toFixed(1)}%`;
 }
 
@@ -32,14 +32,14 @@ function getYear(): number {
 export const slides: SlideConfig[] = [
   // Intro slide
   {
-    id: 'intro',
-    gradient: 'gradient-1',
+    id: "intro",
+    gradient: "gradient-1",
     render: (data) => `
       <div class="slide-content">
         <div class="slide-icon">🎉</div>
         <div class="slide-label">Welcome back</div>
         <div class="slide-title">Ready to see how your finances did in ${getYear()}?</div>
-        <div class="slide-value" style="font-size: 48px;">${data.user.email.split('@')[0]}</div>
+        <div class="slide-value" style="font-size: 48px;">${data.user.email.split("@")[0]}</div>
         <div class="slide-subtitle">Let's dive into your financial year...</div>
       </div>
     `,
@@ -47,16 +47,16 @@ export const slides: SlideConfig[] = [
 
   // Total Portfolio Value
   {
-    id: 'portfolio-value',
-    gradient: 'gradient-3',
+    id: "portfolio-value",
+    gradient: "gradient-3",
     render: (data) => `
       <div class="slide-content">
         <div class="slide-icon">💼</div>
         <div class="slide-label">Total Portfolio Value</div>
         <div class="slide-title">Your investments are now worth</div>
         <div class="slide-value">${formatCurrency(data.totalPortfolioValue, data.userCurrency)}</div>
-        <div class="slide-subtitle">Across ${data.portfolios.length} portfolio${data.portfolios.length !== 1 ? 's' : ''}</div>
-        <div class="comparison-change ${data.totalProfit >= 0 ? 'positive' : 'negative'}">
+        <div class="slide-subtitle">Across ${data.portfolios.length} portfolio${data.portfolios.length !== 1 ? "s" : ""}</div>
+        <div class="comparison-change ${data.totalProfit >= 0 ? "positive" : "negative"}">
           Total profit: ${formatCurrency(data.totalProfit, data.userCurrency)} (${formatPercentage(data.totalProfitPercent)})
         </div>
       </div>
@@ -65,30 +65,36 @@ export const slides: SlideConfig[] = [
 
   // Portfolio breakdown
   {
-    id: 'portfolio-breakdown',
-    gradient: 'gradient-7',
+    id: "portfolio-breakdown",
+    gradient: "gradient-7",
     render: (data) => {
       // Sort by current value (invested + profit)
-      const sortedPortfolios = [...data.portfolios].sort((a, b) =>
-        (b.totalAmountMainCurrency + b.totalProfitMainCurrency) - (a.totalAmountMainCurrency + a.totalProfitMainCurrency)
+      const sortedPortfolios = [...data.portfolios].sort(
+        (a, b) =>
+          b.totalAmountMainCurrency +
+          b.totalProfitMainCurrency -
+          (a.totalAmountMainCurrency + a.totalProfitMainCurrency),
       );
 
-      const portfolioList = sortedPortfolios.slice(0, 5).map((p, i) => {
-        const currentValue = p.totalAmountMainCurrency + p.totalProfitMainCurrency;
-        const profitPercent = p.totalProfitPercentMainCurrency * 100;
-        return `
+      const portfolioList = sortedPortfolios
+        .slice(0, 5)
+        .map((p, i) => {
+          const currentValue = p.totalAmountMainCurrency + p.totalProfitMainCurrency;
+          const profitPercent = p.totalProfitPercentMainCurrency * 100;
+          return `
           <div class="ranking-item">
             <div class="ranking-position">${i + 1}</div>
             <div class="ranking-info">
               <div class="ranking-name">${p.name}</div>
-              <div class="ranking-subtitle" style="font-size: 12px; opacity: 0.7; color: ${p.totalProfitMainCurrency >= 0 ? '#4ade80' : '#f87171'}">
-                ${p.totalProfitMainCurrency >= 0 ? '+' : ''}${formatCurrency(p.totalProfitMainCurrency, data.userCurrency)} (${profitPercent >= 0 ? '+' : ''}${profitPercent.toFixed(0)}%)
+              <div class="ranking-subtitle" style="font-size: 12px; opacity: 0.7; color: ${p.totalProfitMainCurrency >= 0 ? "#4ade80" : "#f87171"}">
+                ${p.totalProfitMainCurrency >= 0 ? "+" : ""}${formatCurrency(p.totalProfitMainCurrency, data.userCurrency)} (${profitPercent >= 0 ? "+" : ""}${profitPercent.toFixed(0)}%)
               </div>
             </div>
             <div class="ranking-value">${formatCurrency(currentValue, data.userCurrency)}</div>
           </div>
         `;
-      }).join('');
+        })
+        .join("");
 
       return `
         <div class="slide-content">
@@ -105,16 +111,16 @@ export const slides: SlideConfig[] = [
 
   // Yearly Performance
   {
-    id: 'yearly-performance',
-    gradient: 'gradient-4',
+    id: "yearly-performance",
+    gradient: "gradient-4",
     render: (data) => {
       const isPositive = data.yearlyProfit >= 0;
       return `
         <div class="slide-content">
-          <div class="slide-icon">${isPositive ? '📈' : '📉'}</div>
+          <div class="slide-icon">${isPositive ? "📈" : "📉"}</div>
           <div class="slide-label">${getYear()} Performance</div>
-          <div class="slide-title">This year your portfolios ${isPositive ? 'gained' : 'lost'}</div>
-          <div class="slide-value" style="color: ${isPositive ? '#4ade80' : '#f87171'}">
+          <div class="slide-title">This year your portfolios ${isPositive ? "gained" : "lost"}</div>
+          <div class="slide-value" style="color: ${isPositive ? "#4ade80" : "#f87171"}">
             ${formatCurrency(data.yearlyProfit, data.userCurrency)}
           </div>
           <div class="slide-subtitle">${formatPercentage(data.yearlyProfitPercentage)} return</div>
@@ -136,26 +142,28 @@ export const slides: SlideConfig[] = [
 
   // Profit History
   {
-    id: 'profit-history',
-    gradient: 'gradient-8',
+    id: "profit-history",
+    gradient: "gradient-8",
     render: (data) => {
-      const profits = data.profitByYear.filter(p => p.year !== 'null' && p.profit !== null);
+      const profits = data.profitByYear.filter((p) => p.year !== "null" && p.profit !== null);
       const recentProfits = profits.slice(-5);
 
-      const barsHtml = recentProfits.map(p => {
-        const maxProfit = Math.max(...recentProfits.map(r => Math.abs(r.profit)));
-        const height = Math.min(100, (Math.abs(p.profit) / maxProfit) * 100);
-        const isPositive = p.profit >= 0;
-        return `
+      const barsHtml = recentProfits
+        .map((p) => {
+          const maxProfit = Math.max(...recentProfits.map((r) => Math.abs(r.profit)));
+          const height = Math.min(100, (Math.abs(p.profit) / maxProfit) * 100);
+          const isPositive = p.profit >= 0;
+          return `
           <div class="bar-item">
             <div class="bar-container">
-              <div class="bar-fill ${isPositive ? 'positive' : 'negative'}" style="height: ${height}%"></div>
+              <div class="bar-fill ${isPositive ? "positive" : "negative"}" style="height: ${height}%"></div>
             </div>
             <div class="bar-label">${p.year}</div>
-            <div class="bar-value" style="color: ${isPositive ? '#4ade80' : '#f87171'}">${formatCurrency(p.profit, data.userCurrency)}</div>
+            <div class="bar-value" style="color: ${isPositive ? "#4ade80" : "#f87171"}">${formatCurrency(p.profit, data.userCurrency)}</div>
           </div>
         `;
-      }).join('');
+        })
+        .join("");
 
       return `
         <div class="slide-content">
@@ -172,8 +180,8 @@ export const slides: SlideConfig[] = [
 
   // Best Performing Portfolio
   {
-    id: 'best-portfolio',
-    gradient: 'gradient-5',
+    id: "best-portfolio",
+    gradient: "gradient-5",
     render: (data) => {
       if (!data.bestPerformingPortfolio) {
         return `
@@ -204,14 +212,17 @@ export const slides: SlideConfig[] = [
 
   // Dividends
   {
-    id: 'dividends',
-    gradient: 'gradient-2',
+    id: "dividends",
+    gradient: "gradient-2",
     render: (data) => {
       const topStocks = data.topDividendStocks.slice(0, 3);
-      const stocksList = topStocks.length > 0
-        ? `
+      const stocksList =
+        topStocks.length > 0
+          ? `
           <div class="ranking-list">
-            ${topStocks.map((stock, i) => `
+            ${topStocks
+              .map(
+                (stock, i) => `
               <div class="ranking-item">
                 <div class="ranking-position">${i + 1}</div>
                 <div class="ranking-info">
@@ -219,10 +230,12 @@ export const slides: SlideConfig[] = [
                 </div>
                 <div class="ranking-value">${formatCurrency(stock.amount, data.userCurrency)}</div>
               </div>
-            `).join('')}
+            `,
+              )
+              .join("")}
           </div>
         `
-        : '';
+          : "";
 
       return `
         <div class="slide-content">
@@ -239,8 +252,8 @@ export const slides: SlideConfig[] = [
 
   // Vestings (Stock Awards)
   {
-    id: 'vestings',
-    gradient: 'gradient-8',
+    id: "vestings",
+    gradient: "gradient-8",
     render: (data) => {
       if (data.totalVestings === 0) {
         return `
@@ -254,14 +267,18 @@ export const slides: SlideConfig[] = [
       }
 
       // Show vesting history
-      const vestings = data.vestingByYear.filter(v => v.year !== 'null' && v.vesting > 0);
+      const vestings = data.vestingByYear.filter((v) => v.year !== "null" && v.vesting > 0);
       const recentVestings = vestings.slice(-4);
-      const vestingHistory = recentVestings.map(v => `
+      const vestingHistory = recentVestings
+        .map(
+          (v) => `
         <div class="comparison-item">
           <div class="comparison-year">${v.year}</div>
           <div class="comparison-value">${formatCurrency(v.vesting, data.userCurrency)}</div>
         </div>
-      `).join('');
+      `,
+        )
+        .join("");
 
       return `
         <div class="slide-content">
@@ -280,8 +297,8 @@ export const slides: SlideConfig[] = [
 
   // Income vs Expenses
   {
-    id: 'income-expenses',
-    gradient: 'gradient-4',
+    id: "income-expenses",
+    gradient: "gradient-4",
     render: (data) => {
       const savings = data.totalIncome + data.totalExpenses; // expenses are negative
       const savingsRate = data.totalIncome > 0 ? (savings / data.totalIncome) * 100 : 0;
@@ -303,8 +320,8 @@ export const slides: SlideConfig[] = [
             </div>
           </div>
 
-          <div class="comparison-change ${savings >= 0 ? 'positive' : 'negative'}">
-            ${savings >= 0 ? 'Saved' : 'Overspent'}: ${formatCurrency(Math.abs(savings), data.userCurrency)}
+          <div class="comparison-change ${savings >= 0 ? "positive" : "negative"}">
+            ${savings >= 0 ? "Saved" : "Overspent"}: ${formatCurrency(Math.abs(savings), data.userCurrency)}
             <br>
             <span style="font-size: 14px; opacity: 0.8">${savingsRate.toFixed(0)}% savings rate</span>
           </div>
@@ -315,10 +332,10 @@ export const slides: SlideConfig[] = [
 
   // Income Evolution
   {
-    id: 'income-evolution',
-    gradient: 'gradient-1',
+    id: "income-evolution",
+    gradient: "gradient-1",
     render: (data) => {
-      const incomes = data.incomeByYear.filter(i => i.year !== 'null' && i.income > 0);
+      const incomes = data.incomeByYear.filter((i) => i.year !== "null" && i.income > 0);
       const recentIncomes = incomes.slice(-5);
 
       if (recentIncomes.length < 2) {
@@ -335,20 +352,24 @@ export const slides: SlideConfig[] = [
       const lastYear = recentIncomes[recentIncomes.length - 1];
       const growth = ((lastYear.income - firstYear.income) / firstYear.income) * 100;
 
-      const incomeList = recentIncomes.map(i => `
+      const incomeList = recentIncomes
+        .map(
+          (i) => `
         <div class="ranking-item">
           <div class="ranking-position">${i.year}</div>
           <div class="ranking-value">${formatCurrency(i.income, data.userCurrency)}</div>
         </div>
-      `).join('');
+      `,
+        )
+        .join("");
 
       return `
         <div class="slide-content">
           <div class="slide-icon">💵</div>
           <div class="slide-label">Income Evolution</div>
           <div class="slide-title">Your income over the years</div>
-          <div class="comparison-change ${growth >= 0 ? 'positive' : 'negative'}">
-            ${growth >= 0 ? '+' : ''}${growth.toFixed(0)}% since ${firstYear.year}
+          <div class="comparison-change ${growth >= 0 ? "positive" : "negative"}">
+            ${growth >= 0 ? "+" : ""}${growth.toFixed(0)}% since ${firstYear.year}
           </div>
           <div class="ranking-list" style="margin-top: 20px;">
             ${incomeList}
@@ -360,8 +381,8 @@ export const slides: SlideConfig[] = [
 
   // Goals Progress
   {
-    id: 'goals',
-    gradient: 'gradient-3',
+    id: "goals",
+    gradient: "gradient-3",
     render: (data) => {
       if (data.goals.length === 0) {
         return `
@@ -375,12 +396,14 @@ export const slides: SlideConfig[] = [
       }
 
       // Calculate progress for each goal (estimate based on total portfolio)
-      const goalsHtml = data.goals.slice(0, 3).map(goal => {
-        const progress = Math.min(100, (data.totalPortfolioValue / goal.targetAmount) * 100);
-        const targetDate = new Date(goal.targetDate);
-        const yearsLeft = Math.max(0, (targetDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24 * 365));
+      const goalsHtml = data.goals
+        .slice(0, 3)
+        .map((goal) => {
+          const progress = Math.min(100, (data.totalPortfolioValue / goal.targetAmount) * 100);
+          const targetDate = new Date(goal.targetDate);
+          const yearsLeft = Math.max(0, (targetDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24 * 365));
 
-        return `
+          return `
           <div class="progress-goal">
             <div class="progress-header">
               <span class="progress-name">${goal.name}</span>
@@ -395,7 +418,8 @@ export const slides: SlideConfig[] = [
             </div>
           </div>
         `;
-      }).join('');
+        })
+        .join("");
 
       return `
         <div class="slide-content">
@@ -412,8 +436,8 @@ export const slides: SlideConfig[] = [
 
   // Summary / Final Slide
   {
-    id: 'summary',
-    gradient: 'gradient-8',
+    id: "summary",
+    gradient: "gradient-8",
     render: (data) => {
       const totalGains = data.yearlyProfit + data.totalDividends + data.totalVestings;
 
