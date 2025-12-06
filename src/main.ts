@@ -387,7 +387,7 @@ document.addEventListener("wheel", (e) => {
 });
 
 // Initialize
-console.log("🎉 Finance Wrapped loaded!");
+console.log("🎉 Stoxiio Wrapped loaded!");
 
 // Check for existing session
 async function checkSession() {

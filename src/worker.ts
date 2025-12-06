@@ -1,4 +1,4 @@
-// Cloudflare Worker - Finance Wrapped
+// Cloudflare Worker - Stoxiio Wrapped
 // Serves static assets and proxies /api/* requests to Stoxiio backend
 
 const API_BASE = "https://api-preview.stoxiio.com";

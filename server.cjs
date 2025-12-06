@@ -84,6 +84,6 @@ app.get("*", (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`🚀 Finance Wrapped server running at http://localhost:${PORT}`);
+  console.log(`🚀 Stoxiio Wrapped server running at http://localhost:${PORT}`);
   console.log(`   Proxying API requests to ${API_BASE}`);
 });

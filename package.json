@@ -1,5 +1,5 @@
 {
-  "name": "finance-wrapped",
+  "name": "stoxiio-wrapped",
   "version": "1.0.0",
   "description": "Spotify Wrapped-style yearly finance summary",
   "type": "module",

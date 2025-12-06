@@ -1,8 +1,8 @@
-# Finance Wrapped 💰
+# Stoxiio Wrapped 💰
 
 A Spotify Wrapped-style yearly financial summary app for Stoxiio users.
 
-![Finance Wrapped Preview](preview.png)
+![Stoxiio Wrapped Preview](preview.png)
 
 ## Features
 
@@ -24,9 +24,9 @@ A Spotify Wrapped-style yearly financial summary app for Stoxiio users.
 
 ### Installation
 
-1. Navigate to the finance-wrapped directory:
+1. Navigate to the stoxiio-wrapped directory:
    ```bash
-   cd finance-wrapped
+   cd stoxiio-wrapped
    ```
 
 2. Install dependencies:
